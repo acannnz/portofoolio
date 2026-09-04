@@ -1,0 +1,47 @@
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+/storage/*.key
+/auth.json
+
+# Dependencies
+/node_modules
+/vendor
+
+# Build Outputs
+/public/build
+/public/hot
+/public/storage
+/public/fonts-manifest.dev.json
+
+# Logs & Caches
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+/.phpunit.cache
+.phpunit.result.cache
+/storage/pail
+
+# Editor & OS Files
+.DS_Store
+Thumbs.db
+/*.swp
+/*.swo
+/.codex
+/.cursor/
+/.idea
+/.nova
+/.vscode
+/.zed
+.phpactor.json
+
+# Laravel Helper Files
+_ide_helper.php
+_ide_helper_models.php
+.php-cs-fixer.cache
+.php_cs.cache
+Homestead.json
+Homestead.yaml
