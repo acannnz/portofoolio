@@ -14,7 +14,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.jsx'])
     @inertiaHead
 </head>
-<body class="bg-[#050505] text-zinc-100 font-['Plus_Jakarta_Sans',sans-serif] antialiased selection:bg-violet-500/30 selection:text-violet-300 overflow-x-hidden">
+<body class="bg-[#050505] text-zinc-100 font-['Plus_Jakarta_Sans',sans-serif] antialiased selection:bg-violet-500/30 selection:text-violet-300">
     @inertia
 </body>
 </html>

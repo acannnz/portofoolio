@@ -10,7 +10,7 @@ Route::get('/', function () {
             'role' => 'Fullstack Developer',
             'age' => '23 Years Old',
             'location' => 'Jembrana, Bali',
-            'avatar' => '/images/profile.png',
+            'avatar' => '/images/profile.webp',
             'about' => 'Software Engineer berpengalaman dalam merancang & membangun aplikasi web modern yang cepat, skalabel, serta berantarmuka intuitif.',
             'skills' => [
                 ['name' => 'Laravel & PHP', 'category' => 'Backend', 'level' => 'Advanced'],

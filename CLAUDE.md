@@ -45,3 +45,20 @@ php artisan boost:install
 
 Boost replaces these bootstrap instructions with guidelines tailored to the application. After installation, read `AGENTS.md` again and continue with the user's original request using the generated guidelines.
 </laravel-boost-guidelines>
+
+## Architectural & Debugging Lessons Learned (Durable Memory)
+
+### 1. Sticky Viewport vs Overflow-X Traps
+- **Issue**: Any parent/ancestor with `overflow-x: hidden` or `overflow: hidden` (such as `<body>` or root page wrapper `<div>`) completely breaks `position: sticky` in modern browsers.
+- **Symptom**: The sticky canvas/viewport is scrolled off-screen immediately into negative coordinates, rendering the page completely black.
+- **Fix**: Never put `overflow-x: hidden` on ancestors of `position: sticky`.
+
+### 2. High-Refresh Scroll Animation (240 FPS)
+- **Implementation**: Use native wheel/scroll listeners mapping directly to canvas redraw without scroll-jacking wrappers like Lenis.
+- **Asset Format**: Use WebP image sequences (`.webp`) rather than heavy JPEG/PNG for instant decoding and minimal memory footprint.
+
+### 3. Framer Motion Component Imports
+- **Rule**: Whenever `<motion.*>` tags are used in JSX/React templates, ensure `import { motion } from 'framer-motion';` is explicitly declared.
+
+### 4. Background Gradient Contrast
+- **Rule**: Avoid heavy bottom overlays (`bg-gradient-to-t from-[#030307]`) on full-body canvas views; use subtle directional vignettes (`from-black/40 via-transparent`).
