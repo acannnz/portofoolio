@@ -17,7 +17,7 @@ import {
     User
 } from 'lucide-react';
 
-export default function ScrollyExperience({ profile }) {
+export default function ScrollyExperience({ profile, onSummonChange }) {
     const containerRef = useRef(null);
     const canvasRef = useRef(null);
 
@@ -25,19 +25,36 @@ export default function ScrollyExperience({ profile }) {
     const [imagesLoaded, setImagesLoaded] = useState(false);
     const [loadedPercent, setLoadedPercent] = useState(0);
     const imagesRef = useRef([]);
-    const totalFrames = 120;
+    const totalFrames = 240;
 
     // Simulation & UI state
     // isSummoned: false = scene Summon saja (belum muncul mecha), true = mecha di-summon
     const [isSummoned, setIsSummoned] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [loadingProgress, setLoadingProgress] = useState(0);
+    const [isIntroPlaying, setIsIntroPlaying] = useState(false);
     const [currentFrame, setCurrentFrame] = useState(1);
     const [currentPhase, setCurrentPhase] = useState(0); // 0: summon, 1: descent/landing, 2: intro identity, 3: armor eject projects
     const [scrollPct, setScrollPct] = useState(0);
 
+    const isSummonedRef = useRef(isSummoned);
     const rafIdRef = useRef(null);
-    const targetFrameRef = useRef(1);
+    useEffect(() => {
+        isSummonedRef.current = isSummoned;
+        if (onSummonChange) onSummonChange(isSummoned);
+    }, [isSummoned, onSummonChange]);
+
     const displayFrameRef = useRef(1);
+    const targetFrameRef = useRef(1);
     const lastRenderedFrameRef = useRef(1);
+    const isIntroPlayingRef = useRef(false);
+    const introRafIdRef = useRef(null);
+
+    useEffect(() => {
+        return () => {
+            if (introRafIdRef.current) cancelAnimationFrame(introRafIdRef.current);
+        };
+    }, []);
     // 1. Preload 120 frames
     useEffect(() => {
         const loadedImages = [];
@@ -108,17 +125,19 @@ export default function ScrollyExperience({ profile }) {
         ctx.drawImage(img, drawX, drawY, drawW, drawH);
         ctx.restore();
     };
-
     // 3. Smooth Lerp Animation Loop
     useEffect(() => {
         const loop = () => {
             if (imagesRef.current.length > 0) {
-                const diff = targetFrameRef.current - displayFrameRef.current;
-                // High precision lerp - ultra responsive and buttery smooth
-                if (Math.abs(diff) > 0.01) {
-                    displayFrameRef.current += diff * 0.45;
-                } else {
-                    displayFrameRef.current = targetFrameRef.current;
+                // If intro animation is currently driving frames from 1 to 46
+                if (!isIntroPlayingRef.current) {
+                    const diff = targetFrameRef.current - displayFrameRef.current;
+                    // High precision lerp - ultra responsive and buttery smooth
+                    if (Math.abs(diff) > 0.01) {
+                        displayFrameRef.current += diff * 0.45;
+                    } else {
+                        displayFrameRef.current = targetFrameRef.current;
+                    }
                 }
 
                 const frameIndex = Math.min(
@@ -140,11 +159,11 @@ export default function ScrollyExperience({ profile }) {
                 setCurrentFrame(frameIndex);
 
                 // Update phase based on frame index
-                if (!isSummoned) {
+                if (!isSummonedRef.current) {
                     setCurrentPhase(0);
-                } else if (frameIndex <= 38) {
+                } else if (frameIndex <= 76) {
                     setCurrentPhase(1); // Descent & Landing
-                } else if (frameIndex <= 78) {
+                } else if (frameIndex <= 156) {
                     setCurrentPhase(2); // Standing Identity Introduction
                 } else {
                     setCurrentPhase(3); // Armor Ejection & Projects
@@ -172,12 +191,12 @@ export default function ScrollyExperience({ profile }) {
             if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
             window.removeEventListener('resize', handleResize);
         };
-    }, [isSummoned]);
+    }, []);
 
-    // 4. Scroll Listener - Ultra-smooth 240Hz direct mouse tracking
+    // 4. Scroll Listener - Active after intro finishes
     useEffect(() => {
         const handleScroll = () => {
-            if (!containerRef.current) return;
+            if (!containerRef.current || isIntroPlayingRef.current || !isSummoned) return;
             const rect = containerRef.current.getBoundingClientRect();
             const totalScrollable = containerRef.current.scrollHeight - window.innerHeight;
             
@@ -186,36 +205,93 @@ export default function ScrollyExperience({ profile }) {
             const progress = Math.min(1, Math.max(0, currentScroll / totalScrollable));
             setScrollPct(Math.round(progress * 100));
 
-            // Auto summon on scroll
-            if (currentScroll > 20 && !isSummoned) {
-                setIsSummoned(true);
-            }
-
-            // Instant responsive mapping to frames [1..120]
-            const target = 1 + progress * (totalFrames - 1);
+            // Map progress [0..1] across remaining frames [46..240]
+            const target = 46 + progress * (totalFrames - 46);
             targetFrameRef.current = target;
         };
 
         window.addEventListener('scroll', handleScroll, { passive: true });
         handleScroll();
-
         return () => {
             window.removeEventListener('scroll', handleScroll);
         };
     }, [isSummoned]);
 
+    // 5. Button Click Handler: Progress Loading -> Auto Play 1 to 46
     const handleStartSummon = () => {
-        setIsSummoned(true);
-        if (containerRef.current) {
-            const targetY = containerRef.current.offsetTop + window.innerHeight * 0.5;
-            window.scrollTo({
-                top: targetY,
-                behavior: 'smooth',
-            });
-        }
+        if (isLoading || isSummoned) return;
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        setIsLoading(true);
+        setLoadingProgress(0);
+
+        let prog = 0;
+        const interval = setInterval(() => {
+            prog += 5;
+            setLoadingProgress(Math.min(100, prog));
+
+            if (prog >= 100) {
+                clearInterval(interval);
+                setTimeout(() => {
+                    setIsLoading(false);
+                    setIsSummoned(true);
+                    startIntroDescent();
+                }, 200);
+            }
+        }, 20); // ~400ms clean progress bar
     };
+
+    const startIntroDescent = () => {
+        if (introRafIdRef.current) cancelAnimationFrame(introRafIdRef.current);
+        setIsIntroPlaying(true);
+        isIntroPlayingRef.current = true;
+        displayFrameRef.current = 1;
+        targetFrameRef.current = 46;
+
+        const startFrame = 1;
+        const endFrame = 46;
+        const durationMs = 1500; // 1.5 seconds smooth cinematic arrival
+        const startTime = performance.now();
+
+        const animateIntro = (currentTime) => {
+            const elapsed = currentTime - startTime;
+            const t = Math.min(1, elapsed / durationMs);
+            // Cubic ease out for dramatic cinematic superhero landing
+            const ease = 1 - Math.pow(1 - t, 3);
+            const frameNow = startFrame + ease * (endFrame - startFrame);
+            
+            displayFrameRef.current = frameNow;
+
+            if (t < 1) {
+                introRafIdRef.current = requestAnimationFrame(animateIntro);
+            } else {
+                displayFrameRef.current = endFrame;
+                targetFrameRef.current = endFrame;
+                isIntroPlayingRef.current = false;
+                setIsIntroPlaying(false);
+                introRafIdRef.current = null;
+                if (containerRef.current) {
+                    const rect = containerRef.current.getBoundingClientRect();
+                    const totalScrollable = containerRef.current.scrollHeight - window.innerHeight;
+                    if (totalScrollable > 0) {
+                        const currentScroll = -rect.top;
+                        const progress = Math.min(1, Math.max(0, currentScroll / totalScrollable));
+                        setScrollPct(Math.round(progress * 100));
+                        targetFrameRef.current = 46 + progress * (totalFrames - 46);
+                    }
+                }
+            }
+        };
+
+        introRafIdRef.current = requestAnimationFrame(animateIntro);
+    };
+
     const handleReset = () => {
+        if (introRafIdRef.current) cancelAnimationFrame(introRafIdRef.current);
+        isIntroPlayingRef.current = false;
+        setIsIntroPlaying(false);
         setIsSummoned(false);
+        setIsLoading(false);
+        setLoadingProgress(0);
         targetFrameRef.current = 1;
         displayFrameRef.current = 1;
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -251,16 +327,20 @@ export default function ScrollyExperience({ profile }) {
     return (
         <div
             ref={containerRef}
-            className="relative w-full h-[600vh] bg-[#030307] text-white select-none"
+            className={`relative w-full bg-[#030307] text-white select-none ${
+                isSummoned ? 'h-[600vh]' : 'h-screen overflow-hidden'
+            }`}
         >
             {/* STICKY FULLSCREEN VIEWPORT (CANVAS & OVERLAYS) */}
             <div className="sticky top-0 left-0 w-full h-screen overflow-hidden z-20">
-                {/* 1. Canvas video sequence */}
+                {/* 1. Canvas video sequence (Muncul ketika summon di-trigger) */}
                 <canvas
                     ref={canvasRef}
-                    className="absolute inset-0 w-full h-full object-cover z-0"
+                    className={`absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-700 ${
+                        isSummoned ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                    }`}
                     style={{
-                        filter: !isSummoned ? 'brightness(0.8) contrast(1.05)' : 'brightness(1.05) contrast(1.05)',
+                        filter: 'brightness(1.05) contrast(1.05)',
                     }}
                 />
 
@@ -273,18 +353,18 @@ export default function ScrollyExperience({ profile }) {
                     }}
                 />
 
-                {/* Cyber HUD Status Bar (Top) */}
-                <div className="absolute top-20 inset-x-0 z-30 px-6 sm:px-12 flex items-center justify-between pointer-events-none">
-                    <div className="flex items-center gap-3">
-                        <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping" />
-                        <span className="font-mono text-xs tracking-widest text-cyan-400 font-semibold uppercase">
-                            {!isSummoned 
-                                ? 'MECHA STANDBY // READY FOR SUMMON' 
-                                : `PHASE 0${currentPhase} // FRAME ${currentFrame}/${totalFrames} // ${scrollPct}%`}
-                        </span>
-                    </div>
+                {/* Cyber HUD Status Bar (Top) - Muncul hanya saat mecha di-summon */}
+                {isSummoned && (
+                    <div className="absolute top-20 inset-x-0 z-30 px-6 sm:px-12 flex items-center justify-between pointer-events-none">
+                        <div className="flex items-center gap-3">
+                            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping" />
+                            <span className="font-mono text-xs tracking-widest text-cyan-400 font-semibold uppercase">
+                                {isIntroPlaying
+                                    ? `APPROACHING ROOFTOP // FRAME ${currentFrame}/46`
+                                    : `PHASE 0${currentPhase} // FRAME ${currentFrame}/${totalFrames} // ${scrollPct}%`}
+                            </span>
+                        </div>
 
-                    {isSummoned && (
                         <div className="hidden sm:flex items-center gap-4 text-[11px] font-mono text-zinc-400">
                             <span className="px-2.5 py-1 rounded bg-black/60 border border-white/10 backdrop-blur-md">
                                 LAT: 8.36° S | LONG: 114.62° E
@@ -300,9 +380,8 @@ export default function ScrollyExperience({ profile }) {
                                 <RotateCcw className="w-3.5 h-3.5" />
                             </button>
                         </div>
-                    )}
-                </div>
-
+                    </div>
+                )}
                 {/* ========================================================================= */}
                 {/* SCENE 0: SUMMON INITIAL SCREEN (Hanya ada Summon saja sebelum diklik)   */}
                 {/* ========================================================================= */}
@@ -310,96 +389,49 @@ export default function ScrollyExperience({ profile }) {
                     {!isSummoned && (
                         <motion.div
                             key="summon-screen"
-                            initial={{ opacity: 0, scale: 0.96 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 1.08, filter: 'blur(10px)' }}
-                            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-                            className="absolute inset-0 z-40 flex flex-col items-center justify-center p-6 text-center"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 z-40 flex items-center justify-center p-6 select-none bg-[#030307]"
                         >
-                            {/* Radial Glow */}
-                            <div className="absolute w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-3xl pointer-events-none -z-10 animate-pulse" />
-                            <div className="absolute w-[350px] h-[350px] bg-cyan-500/15 rounded-full blur-2xl pointer-events-none -z-10" />
-
-                            {/* Tech Chip Badge */}
-                            <motion.div
-                                initial={{ y: -20, opacity: 0 }}
-                                animate={{ y: 0, opacity: 1 }}
-                                transition={{ delay: 0.2 }}
-                                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 font-mono text-xs tracking-wider mb-6 shadow-lg shadow-cyan-950/50 backdrop-blur-md"
-                            >
-                                <Radio className="w-3.5 h-3.5 animate-pulse text-cyan-400" />
-                                <span>CYBERNETIC LINK ONLINE • STANDBY</span>
-                            </motion.div>
-
-                            {/* Main Summon Title */}
-                            <motion.h1
-                                initial={{ y: 20, opacity: 0 }}
-                                animate={{ y: 0, opacity: 1 }}
-                                transition={{ delay: 0.3 }}
-                                className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight uppercase leading-none max-w-4xl"
-                            >
-                                <span className="block text-transparent bg-clip-text bg-gradient-to-b from-white via-zinc-200 to-zinc-500">
-                                    INITIALIZE
-                                </span>
-                                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 drop-shadow-[0_0_35px_rgba(168,85,247,0.4)]">
-                                    MECHA PROTOCOL
-                                </span>
-                            </motion.h1>
-
-                            {/* Subtitle / Description */}
-                            <motion.p
-                                initial={{ y: 20, opacity: 0 }}
-                                animate={{ y: 0, opacity: 1 }}
-                                transition={{ delay: 0.4 }}
-                                className="mt-5 text-zinc-400 max-w-lg text-sm sm:text-base font-normal leading-relaxed"
-                            >
-                                Tekan tombol summon untuk memulai deploy unit mecha ke rooftop kota cyber. Scroll untuk mengendalikan frame pergerakan, profil pilot, dan pelepasan pecahan armor proyek.
-                            </motion.p>
-
-                            {/* The Summon Button */}
-                            <motion.div
-                                initial={{ scale: 0.9, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                transition={{ delay: 0.5 }}
-                                className="mt-10 relative group"
-                            >
-                                {/* Glowing outer ring */}
-                                <div className="absolute -inset-1.5 rounded-2xl bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 opacity-70 blur-lg group-hover:opacity-100 group-hover:blur-xl transition duration-500 animate-pulse" />
-
+                            {!isLoading ? (
                                 <button
+                                    id="btn-summon-mecha"
                                     onClick={handleStartSummon}
-                                    className="relative px-10 py-5 rounded-2xl bg-zinc-950 text-white font-bold text-base sm:text-lg tracking-wider uppercase border border-cyan-400/50 shadow-2xl flex items-center gap-3 transition-all transform group-hover:scale-[1.03] group-active:scale-[0.98]"
+                                    className="px-10 py-5 rounded-2xl bg-zinc-900/90 hover:bg-zinc-800 text-white font-bold text-lg tracking-widest uppercase border border-cyan-400/50 shadow-[0_0_35px_rgba(6,182,212,0.3)] flex items-center gap-3 transition-all transform hover:scale-105 active:scale-95 cursor-pointer backdrop-blur-md"
                                 >
-                                    <Sparkles className="w-5 h-5 text-cyan-400 animate-spin" />
-                                    <span>SUMMON MECHA CANDRA</span>
-                                    <ArrowRight className="w-5 h-5 text-purple-400 group-hover:translate-x-1.5 transition-transform" />
+                                    <Sparkles className="w-5 h-5 text-cyan-400" />
+                                    <span>SUMMON MECHA</span>
+                                    <ArrowRight className="w-5 h-5 text-purple-400" />
                                 </button>
-                            </motion.div>
-
-                            {/* Loading Indicator when frames still downloading */}
-                            {!imagesLoaded && (
-                                <motion.div 
-                                    initial={{ opacity: 0 }} 
-                                    animate={{ opacity: 1 }}
-                                    className="mt-6 flex flex-col items-center gap-2"
-                                >
-                                    <div className="w-48 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                            ) : (
+                                /* Progress Loading saat tombol diklik */
+                                <div className="flex flex-col items-center gap-4 bg-zinc-950/90 p-8 rounded-2xl border border-cyan-500/40 backdrop-blur-xl shadow-[0_0_40px_rgba(6,182,212,0.2)] min-w-[320px]">
+                                    <div className="flex items-center gap-2 text-cyan-400 font-mono text-xs uppercase tracking-widest">
+                                        <Cpu className="w-4 h-4 animate-spin text-cyan-400" />
+                                        <span>SUMMONING PROTOCOL...</span>
+                                    </div>
+                                    
+                                    {/* Progress Bar */}
+                                    <div className="w-full h-2 bg-zinc-900 rounded-full overflow-hidden border border-white/10 p-0.5">
                                         <div
-                                            className="h-full bg-gradient-to-r from-purple-500 to-cyan-400 transition-all duration-300"
-                                            style={{ width: `${loadedPercent}%` }}
+                                            className="h-full bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 rounded-full transition-all duration-75"
+                                            style={{ width: `${loadingProgress}%` }}
                                         />
                                     </div>
-                                    <span className="font-mono text-[11px] text-zinc-500">
-                                        Buffering Neural Frames: {loadedPercent}%
-                                    </span>
-                                </motion.div>
+
+                                    <div className="w-full flex items-center justify-between font-mono text-[11px] text-zinc-400">
+                                        <span>INITIALIZING FRAMES</span>
+                                        <span className="text-cyan-400 font-bold">{loadingProgress}%</span>
+                                    </div>
+                                </div>
                             )}
                         </motion.div>
                     )}
                 </AnimatePresence>
 
                 {/* ========================================================================= */}
-                {/* SCENE 1: MECHA DESCENT & SMOOTH ROOFTOP LANDING (Frame 1 - 38)            */}
+                {/* SCENE 1: MECHA DESCENT & SMOOTH ROOFTOP LANDING (Frame 1 - 76)            */}
                 {/* ========================================================================= */}
                 <AnimatePresence>
                     {isSummoned && currentPhase === 1 && (
@@ -433,7 +465,7 @@ export default function ScrollyExperience({ profile }) {
                 </AnimatePresence>
 
                 {/* ========================================================================= */}
-                {/* SCENE 2: STANDING & INTRODUCING PILOT IDENTITY (Frame 39 - 78)            */}
+                {/* SCENE 2: STANDING & INTRODUCING PILOT IDENTITY (Frame 77 - 156)           */}
                 {/* Mecha berdiri gagah di rooftop & memperkenalkan dirinya (identitas user) */}
                 {/* ========================================================================= */}
                 <AnimatePresence>

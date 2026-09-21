@@ -10,7 +10,9 @@ import {
 } from 'lucide-react';
 
 export default function Home({ profile }) {
-    // Native buttery-smooth scroll without library interference
+    const [isSummoned, setIsSummoned] = useState(false);
+
+    // Native scroll to top
     useEffect(() => {
         window.scrollTo(0, 0);
     }, []);
@@ -27,35 +29,33 @@ export default function Home({ profile }) {
             <div className="ambient-glow w-[600px] h-[600px] bg-cyan-900/10 top-1/3 -right-40 pointer-events-none z-0" />
             <div className="ambient-glow w-[500px] h-[500px] bg-indigo-900/15 bottom-10 left-1/4 pointer-events-none z-0" />
 
-            {/* Glass Navigation Bar */}
-            <header className="fixed top-6 inset-x-0 z-50 flex justify-center px-4 pointer-events-none">
-                <nav className="glass-card rounded-full px-6 py-2.5 flex items-center gap-6 sm:gap-8 border border-white/10 shadow-2xl backdrop-blur-md pointer-events-auto">
-                    <span className="text-xs font-mono font-bold tracking-widest text-cyan-400">
-                        CANDRA.3D
-                    </span>
-                    <a href="#skills" className="text-xs sm:text-sm text-zinc-400 hover:text-white transition-colors">
-                        Skills
-                    </a>
-                    <a href="#experience" className="text-xs sm:text-sm text-zinc-400 hover:text-white transition-colors">
-                        Experience
-                    </a>
-                    <a href="#contact" className="text-xs sm:text-sm text-zinc-400 hover:text-white transition-colors">
-                        Contact
-                    </a>
-                </nav>
-            </header>
+            {/* Glass Navigation Bar - Hanya muncul jika mecha sudah di-summon */}
+            {isSummoned && (
+                <header className="fixed top-6 inset-x-0 z-50 flex justify-center px-4 pointer-events-none">
+                    <nav className="glass-card rounded-full px-6 py-2.5 flex items-center gap-6 sm:gap-8 border border-white/10 shadow-2xl backdrop-blur-md pointer-events-auto">
+                        <span className="text-xs font-mono font-bold tracking-widest text-cyan-400">
+                            CANDRA.3D
+                        </span>
+                        <a href="#skills" className="text-xs sm:text-sm text-zinc-400 hover:text-white transition-colors">
+                            Skills
+                        </a>
+                        <a href="#experience" className="text-xs sm:text-sm text-zinc-400 hover:text-white transition-colors">
+                            Experience
+                        </a>
+                        <a href="#contact" className="text-xs sm:text-sm text-zinc-400 hover:text-white transition-colors">
+                            Contact
+                        </a>
+                    </nav>
+                </header>
+            )}
 
-            {/* ========================================================================= */}
-            {/* HERO SCROLLYEXPERIENCE CONTAINER                                          */}
-            {/* Scene 0: Summon Only Screen                                               */}
-            {/* On Click -> Mecha turun dengan smooth sesuai frame (Scene 1: Descent)     */}
-            {/* Scene 2: Mecha berdiri & memperkenalkan diri dengan identitas user        */}
-            {/* Scene 3: Mecha melepas armor, pecahan armor membawa projek-projek         */}
-            {/* ========================================================================= */}
+            {/* HERO SCROLLYEXPERIENCE CONTAINER */}
             <main>
-                <ScrollyExperience profile={profile} />
+                <ScrollyExperience profile={profile} onSummonChange={setIsSummoned} />
 
-                {/* Additional Sections below motion experience */}
+                {/* Additional Sections below motion experience (Muncul setelah summon) */}
+                {isSummoned && (
+                    <>
                 {/* Skills Section */}
                 <section id="skills" className="py-24 px-6 max-w-6xl mx-auto relative z-20">
                     <motion.div
@@ -155,12 +155,14 @@ export default function Home({ profile }) {
                         </div>
                     </motion.div>
                 </section>
-            </main>
 
-            {/* Footer */}
-            <footer className="py-8 border-t border-zinc-900 text-center text-xs text-zinc-600 relative z-20">
-                © {new Date().getFullYear()} I PUTU GEDE CANDRA PRATAMA. Built with Laravel, Inertia, React & Framer Motion.
-            </footer>
+                {/* Footer */}
+                <footer className="py-8 border-t border-zinc-900 text-center text-xs text-zinc-600 relative z-20">
+                    © {new Date().getFullYear()} I PUTU GEDE CANDRA PRATAMA. Built with Laravel, Inertia, React & Framer Motion.
+                </footer>
+                </>
+                )}
+            </main>
         </div>
     );
 }
