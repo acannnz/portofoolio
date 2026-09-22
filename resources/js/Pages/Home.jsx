@@ -29,26 +29,6 @@ export default function Home({ profile }) {
             <div className="ambient-glow w-[600px] h-[600px] bg-cyan-900/10 top-1/3 -right-40 pointer-events-none z-0" />
             <div className="ambient-glow w-[500px] h-[500px] bg-indigo-900/15 bottom-10 left-1/4 pointer-events-none z-0" />
 
-            {/* Glass Navigation Bar - Hanya muncul jika mecha sudah di-summon */}
-            {isSummoned && (
-                <header className="fixed top-6 inset-x-0 z-50 flex justify-center px-4 pointer-events-none">
-                    <nav className="glass-card rounded-full px-6 py-2.5 flex items-center gap-6 sm:gap-8 border border-white/10 shadow-2xl backdrop-blur-md pointer-events-auto">
-                        <span className="text-xs font-mono font-bold tracking-widest text-cyan-400">
-                            CANDRA.3D
-                        </span>
-                        <a href="#skills" className="text-xs sm:text-sm text-zinc-400 hover:text-white transition-colors">
-                            Skills
-                        </a>
-                        <a href="#experience" className="text-xs sm:text-sm text-zinc-400 hover:text-white transition-colors">
-                            Experience
-                        </a>
-                        <a href="#contact" className="text-xs sm:text-sm text-zinc-400 hover:text-white transition-colors">
-                            Contact
-                        </a>
-                    </nav>
-                </header>
-            )}
-
             {/* HERO SCROLLYEXPERIENCE CONTAINER */}
             <main>
                 <ScrollyExperience profile={profile} onSummonChange={setIsSummoned} />
@@ -56,42 +36,6 @@ export default function Home({ profile }) {
                 {/* Additional Sections below motion experience (Muncul setelah summon) */}
                 {isSummoned && (
                     <>
-                {/* Skills Section */}
-                <section id="skills" className="py-24 px-6 max-w-6xl mx-auto relative z-20">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.6 }}
-                        className="space-y-3 mb-14 text-center sm:text-left"
-                    >
-                        <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-purple-400">
-                            <Layers className="w-3.5 h-3.5" /> Technical Expertise
-                        </div>
-                        <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-white">
-                            Skills & Stack
-                        </h2>
-                    </motion.div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-                        {profile?.skills?.map((skill, idx) => (
-                            <motion.div
-                                key={idx}
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                whileInView={{ opacity: 1, scale: 1 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.4, delay: idx * 0.05 }}
-                                className="glass-card rounded-xl p-5 text-center space-y-2 hover:border-purple-500/30 transition-all group"
-                            >
-                                <div className="text-xs text-purple-400 font-medium">{skill.category}</div>
-                                <div className="text-sm font-semibold text-white group-hover:text-purple-300 transition-colors">
-                                    {skill.name}
-                                </div>
-                            </motion.div>
-                        ))}
-                    </div>
-                </section>
-
                 {/* Experience / Milestones Section */}
                 <section id="experience" className="py-24 px-6 max-w-5xl mx-auto relative z-20">
                     <motion.div

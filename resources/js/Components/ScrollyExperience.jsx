@@ -14,7 +14,11 @@ import {
     Play,
     RotateCcw,
     Radio,
-    User
+    User,
+    Server,
+    Database,
+    Zap,
+    Network
 } from 'lucide-react';
 
 export default function ScrollyExperience({ profile, onSummonChange }) {
@@ -36,13 +40,44 @@ export default function ScrollyExperience({ profile, onSummonChange }) {
     const [currentFrame, setCurrentFrame] = useState(1);
     const [currentPhase, setCurrentPhase] = useState(0); // 0: summon, 1: descent/landing, 2: intro identity, 3: armor eject projects
     const [scrollPct, setScrollPct] = useState(0);
+    const [typedName, setTypedName] = useState('');
+    const [nameComplete, setNameComplete] = useState(false);
+    // Scroll-driven animation parameters for lines & components
+    const p1Progress = Math.min(1, Math.max(0, (currentFrame - 46) / 30));
+    const p1Delta = (currentFrame - 46) * 1.2;
+    const p2Progress = Math.min(1, Math.max(0, (currentFrame - 77) / 79));
+    const p2Center = currentFrame - 116; // Center standing frame
+    const lineDashOffset = -currentFrame * 7; // Real-time laser pulse flowing with scroll
 
+    const fullName = profile?.name || 'I PUTU GEDE CANDRA PRATAMA';
+    useEffect(() => {
+        if (isSummoned && !isIntroPlaying) {
+            let i = 0;
+            setTypedName('');
+            setNameComplete(false);
+            const delayTimer = setTimeout(() => {
+                const typeInterval = setInterval(() => {
+                    i++;
+                    setTypedName(fullName.slice(0, i));
+                    if (i >= fullName.length) {
+                        clearInterval(typeInterval);
+                        setNameComplete(true);
+                    }
+                }, 38);
+                return () => clearInterval(typeInterval);
+            }, 300);
+            return () => clearTimeout(delayTimer);
+        } else {
+            setTypedName('');
+            setNameComplete(false);
+        }
+    }, [isSummoned, isIntroPlaying, fullName]);
     const isSummonedRef = useRef(isSummoned);
     const rafIdRef = useRef(null);
     useEffect(() => {
         isSummonedRef.current = isSummoned;
-        if (onSummonChange) onSummonChange(isSummoned);
-    }, [isSummoned, onSummonChange]);
+        if (onSummonChange) onSummonChange(isSummoned && !isIntroPlaying);
+    }, [isSummoned, isIntroPlaying, onSummonChange]);
 
     const displayFrameRef = useRef(1);
     const targetFrameRef = useRef(1);
@@ -103,6 +138,8 @@ export default function ScrollyExperience({ profile, onSummonChange }) {
 
         ctx.save();
         ctx.scale(dpr, dpr);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
 
         const imgRatio = (img.naturalWidth || 1280) / (img.naturalHeight || 720);
         const canvasRatio = width / height;
@@ -292,9 +329,64 @@ export default function ScrollyExperience({ profile, onSummonChange }) {
         setIsSummoned(false);
         setIsLoading(false);
         setLoadingProgress(0);
+        setTypedName('');
+        setNameComplete(false);
         targetFrameRef.current = 1;
         displayFrameRef.current = 1;
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    const skills = profile?.skills || [
+        { name: 'Laravel & PHP', category: 'Backend', level: 'Advanced' },
+        { name: 'React & Next.js', category: 'Frontend', level: 'Advanced' },
+        { name: 'PostgreSQL & MySQL', category: 'Database', level: 'Intermediate' },
+        { name: 'TailwindCSS & UI/UX', category: 'Design', level: 'Advanced' },
+        { name: 'REST API & WebSockets', category: 'Architecture', level: 'Advanced' },
+        { name: 'Git & Docker', category: 'DevOps', level: 'Intermediate' },
+    ];
+
+    const SKILL_METRICS = {
+        'Laravel & PHP': {
+            serial: 'MOD_01 // BACKEND',
+            efficiency: 96,
+            status: 'OVERCLOCKED',
+            tags: ['Eloquent ORM', 'Queue Architecture'],
+            icon: Server,
+        },
+        'React & Next.js': {
+            serial: 'MOD_02 // FRONTEND',
+            efficiency: 94,
+            status: 'SYNCHRONIZED',
+            tags: ['Next.js SSR', 'Framer Motion'],
+            icon: Code2,
+        },
+        'PostgreSQL & MySQL': {
+            serial: 'MOD_03 // DATABASE',
+            efficiency: 88,
+            status: 'CALIBRATED',
+            tags: ['Indexing & Partition', 'ACID Security'],
+            icon: Database,
+        },
+        'TailwindCSS & UI/UX': {
+            serial: 'MOD_04 // DESIGN',
+            efficiency: 95,
+            status: 'HIGH_FIDELITY',
+            tags: ['Design Tokens', '60FPS Responsive'],
+            icon: Zap,
+        },
+        'REST API & WebSockets': {
+            serial: 'MOD_05 // ARCHITECTURE',
+            efficiency: 92,
+            status: 'LOW_LATENCY',
+            tags: ['WebSockets', 'Pub/Sub Events'],
+            icon: Network,
+        },
+        'Git & Docker': {
+            serial: 'MOD_06 // DEVOPS',
+            efficiency: 89,
+            status: 'CONTAINERIZED',
+            tags: ['Docker Compose', 'CI/CD Flow'],
+            icon: Terminal,
+        }
     };
 
     const projects = profile?.projects || [
@@ -339,49 +431,8 @@ export default function ScrollyExperience({ profile, onSummonChange }) {
                     className={`absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-700 ${
                         isSummoned ? 'opacity-100' : 'opacity-0 pointer-events-none'
                     }`}
-                    style={{
-                        filter: 'brightness(1.05) contrast(1.05)',
-                    }}
                 />
 
-                {/* Subtle Cinematic Vignette - Clear View of Mecha & City */}
-                <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent pointer-events-none z-10" />
-                <div 
-                    className="absolute inset-0 opacity-[0.03] pointer-events-none z-10"
-                    style={{
-                        backgroundSize: '32px 32px'
-                    }}
-                />
-
-                {/* Cyber HUD Status Bar (Top) - Muncul hanya saat mecha di-summon */}
-                {isSummoned && (
-                    <div className="absolute top-20 inset-x-0 z-30 px-6 sm:px-12 flex items-center justify-between pointer-events-none">
-                        <div className="flex items-center gap-3">
-                            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping" />
-                            <span className="font-mono text-xs tracking-widest text-cyan-400 font-semibold uppercase">
-                                {isIntroPlaying
-                                    ? `APPROACHING ROOFTOP // FRAME ${currentFrame}/46`
-                                    : `PHASE 0${currentPhase} // FRAME ${currentFrame}/${totalFrames} // ${scrollPct}%`}
-                            </span>
-                        </div>
-
-                        <div className="hidden sm:flex items-center gap-4 text-[11px] font-mono text-zinc-400">
-                            <span className="px-2.5 py-1 rounded bg-black/60 border border-white/10 backdrop-blur-md">
-                                LAT: 8.36° S | LONG: 114.62° E
-                            </span>
-                            <span className="px-2.5 py-1 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 backdrop-blur-md">
-                                SYNC: ULTRA 240FPS
-                            </span>
-                            <button
-                                onClick={handleReset}
-                                className="pointer-events-auto p-1.5 rounded-lg bg-zinc-900/80 border border-zinc-700 text-zinc-300 hover:text-white hover:border-purple-500 transition-colors"
-                                title="Reset Summon"
-                            >
-                                <RotateCcw className="w-3.5 h-3.5" />
-                            </button>
-                        </div>
-                    </div>
-                )}
                 {/* ========================================================================= */}
                 {/* SCENE 0: SUMMON INITIAL SCREEN (Hanya ada Summon saja sebelum diklik)   */}
                 {/* ========================================================================= */}
@@ -433,125 +484,660 @@ export default function ScrollyExperience({ profile, onSummonChange }) {
                 {/* ========================================================================= */}
                 {/* SCENE 1: MECHA DESCENT & SMOOTH ROOFTOP LANDING (Frame 1 - 76)            */}
                 {/* ========================================================================= */}
+                {/* SCENE 1 & 2: ROBOTIC PILOT IDENTITY INITIALIZATION (Landing & Standing)   */}
+                {/* Muncul perlahan secara robotik saat mecha mendarat & berdiri              */}
+                {/* ========================================================================= */}
+                {/* SCENE 1: ROBOTIC PILOT IDENTITY CONNECTED TO CHEST (Landing Frame 46 - 76)*/}
+                {/* Terhubung garis laser dari dada robot ke Kiri (Nama) dan Kanan (Bio/Specs)*/}
+                {/* ========================================================================= */}
                 <AnimatePresence>
-                    {isSummoned && currentPhase === 1 && (
+                    {isSummoned && !isIntroPlaying && currentPhase === 1 && (
                         <motion.div
-                            key="phase-descent"
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
+                            key="phase-robotic-identity"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
                             transition={{ duration: 0.5 }}
-                            className="absolute bottom-16 inset-x-0 z-30 flex flex-col items-center justify-center p-6 text-center pointer-events-none"
+                            className="absolute inset-0 z-30 pointer-events-none"
                         >
-                            <div className="glass-card rounded-2xl px-6 py-4 border border-cyan-500/30 backdrop-blur-xl shadow-2xl max-w-md pointer-events-auto">
-                                <div className="inline-flex items-center gap-2 text-cyan-400 font-mono text-xs uppercase tracking-widest mb-1">
-                                    <Cpu className="w-3.5 h-3.5 animate-spin" />
-                                    <span>STAGE 01 • DESCENT IN PROGRESS</span>
+                            {/* Laser Leader Lines SVG Overlay */}
+                            <svg className="absolute inset-0 w-full h-full pointer-events-none z-20 hidden md:block" viewBox="0 0 1000 1000" preserveAspectRatio="none">
+                                <defs>
+                                    <filter id="cyan-glow" x="-20%" y="-20%" width="140%" height="140%">
+                                        <feGaussianBlur stdDeviation="3" result="blur" />
+                                        <feMerge>
+                                            <feMergeNode in="blur" />
+                                            <feMergeNode in="SourceGraphic" />
+                                        </feMerge>
+                                    </filter>
+                                </defs>
+
+                                {/* 1. Head / Visor Anchor Node (Left Temple: 465, 175) */}
+                                <circle cx="465" cy="175" r="4.5" fill="#22d3ee" filter="url(#cyan-glow)" />
+                                <circle cx="465" cy="175" r="8" fill="none" stroke="#22d3ee" strokeWidth="1" strokeDasharray="3 2" opacity="0.6" />
+
+                                {/* Left 90-Degree Orthogonal Line: emerges from Head to Name Card */}
+                                <motion.path
+                                    d="M 465 175 H 370 V 440 H 300"
+                                    stroke="#06b6d4"
+                                    strokeWidth="2"
+                                    strokeDasharray="6 3"
+                                    strokeDashoffset={lineDashOffset}
+                                    fill="none"
+                                    filter="url(#cyan-glow)"
+                                    initial={{ pathLength: 0, opacity: 0 }}
+                                    animate={{ pathLength: 1, opacity: 1 }}
+                                    transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
+                                />
+                                <motion.circle
+                                    cx="370"
+                                    cy="440"
+                                    r="2.5"
+                                    fill="#22d3ee"
+                                    initial={{ scale: 0, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    transition={{ delay: 0.5, duration: 0.3 }}
+                                />
+                                <motion.circle
+                                    cx="300"
+                                    cy="440"
+                                    r="3.5"
+                                    fill="#22d3ee"
+                                    initial={{ scale: 0, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    transition={{ delay: 0.8, duration: 0.3 }}
+                                />
+
+                                {/* Right 90-Degree Orthogonal Line: emerges from Chest to Bio Card */}
+                                <motion.path
+                                    d="M 525 450 H 630 V 510 H 700"
+                                    stroke="#06b6d4"
+                                    strokeWidth="2"
+                                    strokeDasharray="6 3"
+                                    strokeDashoffset={lineDashOffset}
+                                    fill="none"
+                                    filter="url(#cyan-glow)"
+                                    initial={{ pathLength: 0, opacity: 0 }}
+                                    animate={{ pathLength: 1, opacity: 1 }}
+                                    transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.25 }}
+                                />
+                                <motion.circle
+                                    cx="630"
+                                    cy="510"
+                                    r="2.5"
+                                    fill="#22d3ee"
+                                    initial={{ scale: 0, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    transition={{ delay: 0.6, duration: 0.3 }}
+                                />
+                                <motion.circle
+                                    cx="700"
+                                    cy="510"
+                                    r="3.5"
+                                    fill="#22d3ee"
+                                    initial={{ scale: 0, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    transition={{ delay: 0.9, duration: 0.3 }}
+                                />
+                            </svg>
+
+                            {/* Left Component: Nama & Role */}
+                            <motion.div
+                                initial={{ opacity: 0, x: 25, scale: 0.96 }}
+                                animate={{ opacity: 1, x: 0, scale: 1 }}
+                                transition={{ duration: 0.6, delay: 0.5 }}
+                                style={{
+                                    transform: `translateY(${-p1Delta * 0.4}px)`
+                                }}
+                                className="hidden md:block absolute top-1/2 -translate-y-1/2 left-3 sm:left-6 lg:left-12 z-30 max-w-xs sm:max-w-sm w-full pointer-events-auto"
+                            >
+                                <div className="relative glass-card rounded-2xl p-5 sm:p-6 border border-cyan-500/30 bg-zinc-950/80 backdrop-blur-2xl shadow-[0_0_40px_rgba(6,182,212,0.18)] space-y-4 overflow-hidden w-full">
+                                    {/* Cybernetic Corner Brackets */}
+                                    <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-cyan-400 pointer-events-none" />
+                                    <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-cyan-400 pointer-events-none" />
+                                    <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-cyan-400 pointer-events-none" />
+                                    <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-cyan-400 pointer-events-none" />
+
+                                    {/* Header */}
+                                    <div className="flex items-center justify-between border-b border-cyan-500/20 pb-2.5">
+                                        <div className="flex items-center gap-2">
+                                            <Cpu className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+                                            <span className="font-mono text-[9px] text-cyan-400 tracking-widest uppercase font-bold">
+                                                PILOT // IDENTIFICATION
+                                            </span>
+                                        </div>
+                                        <span className="text-[9px] font-mono text-cyan-400/80 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+                                            NEURAL_LINK
+                                        </span>
+                                    </div>
+
+                                    {/* Name & Role */}
+                                    <div className="space-y-2">
+                                        <span className="text-[10px] font-mono text-zinc-400 tracking-wider block">
+                                            // DESIGNATION RECOGNIZED:
+                                        </span>
+                                        <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-cyan-300 tracking-tight uppercase font-mono min-h-[2.5rem] flex items-center">
+                                            <span>{typedName || '\u00A0'}</span>
+                                            {!nameComplete && (
+                                                <span className="inline-block w-2.5 h-6 ml-1 bg-cyan-400 animate-pulse" />
+                                            )}
+                                        </h2>
+
+                                        <motion.div
+                                            initial={{ opacity: 0, x: -10 }}
+                                            animate={{ opacity: nameComplete ? 1 : 0.4, x: 0 }}
+                                            transition={{ duration: 0.4 }}
+                                            className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-cyan-500/10 border border-cyan-500/30 text-xs font-mono font-bold text-cyan-300"
+                                        >
+                                            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+                                            <span>{profile?.role || 'Fullstack Developer'}</span>
+                                        </motion.div>
+                                    </div>
+
+                                    <div className="text-[10px] font-mono text-cyan-400/70 border-t border-white/5 pt-2 flex items-center justify-between">
+                                        <span>TETHER: KEPALA // VISOR LINK</span>
+                                        <span className="text-emerald-400 font-bold">ONLINE</span>
+                                    </div>
                                 </div>
-                                <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                                    MECHA APPROACHING ROOFTOP
-                                </h3>
-                                <p className="text-xs text-zinc-400 mt-1">
-                                    Scroll ke bawah untuk mendaratkan mecha secara perlahan & membuka identitas pilot.
-                                </p>
-                                
-                                <div className="mt-4 flex items-center justify-center gap-2 text-zinc-500 font-mono text-[11px]">
-                                    <ChevronDown className="w-4 h-4 animate-bounce text-cyan-400" />
-                                    <span>SCROLL TO TOUCHDOWN</span>
+                            </motion.div>
+
+                            {/* Right Component: Bio & System Telemetry */}
+                            <motion.div
+                                initial={{ opacity: 0, x: -25, scale: 0.96 }}
+                                animate={{ opacity: 1, x: 0, scale: 1 }}
+                                transition={{ duration: 0.6, delay: 0.6 }}
+                                style={{
+                                    transform: `translateY(${p1Delta * 0.4}px)`
+                                }}
+                                className="hidden md:block absolute top-1/2 -translate-y-1/2 right-3 sm:right-6 lg:right-12 z-30 max-w-xs sm:max-w-sm w-full pointer-events-auto"
+                            >
+                                <div className="relative glass-card rounded-2xl p-5 sm:p-6 border border-cyan-500/30 bg-zinc-950/80 backdrop-blur-2xl shadow-[0_0_40px_rgba(6,182,212,0.18)] space-y-3.5 overflow-hidden w-full">
+                                    {/* Cybernetic Corner Brackets */}
+                                    <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-cyan-400 pointer-events-none" />
+                                    <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-cyan-400 pointer-events-none" />
+                                    <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-cyan-400 pointer-events-none" />
+                                    <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-cyan-400 pointer-events-none" />
+
+                                    {/* Header */}
+                                    <div className="flex items-center justify-between border-b border-cyan-500/20 pb-2.5">
+                                        <div className="flex items-center gap-2">
+                                            <Terminal className="w-3.5 h-3.5 text-cyan-400" />
+                                            <span className="font-mono text-[9px] text-cyan-400 tracking-widest uppercase font-bold">
+                                                PILOT DOSSIER // TELEMETRY
+                                            </span>
+                                        </div>
+                                        <span className="flex items-center gap-1 text-[10px] font-mono text-emerald-400 font-bold">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                            SYNC 100%
+                                        </span>
+                                    </div>
+
+                                    {/* Bio */}
+                                    <p className="text-xs text-zinc-300 leading-relaxed font-sans">
+                                        {profile?.about || 'Software Engineer berpengalaman dalam merancang & membangun aplikasi web modern yang cepat, skalabel, serta berantarmuka intuitif.'}
+                                    </p>
+
+                                    {/* 3 Quick Modular Specs */}
+                                    <div className="space-y-2 pt-1">
+                                        <div className="p-2.5 rounded-xl bg-zinc-900/80 border border-cyan-500/20 flex items-center justify-between text-xs font-mono">
+                                            <span className="text-[10px] text-cyan-400/80 uppercase">LOCATION:</span>
+                                            <span className="text-white font-bold">{profile?.location || 'Jembrana, Bali'}</span>
+                                        </div>
+                                        <div className="p-2.5 rounded-xl bg-zinc-900/80 border border-cyan-500/20 flex items-center justify-between text-xs font-mono">
+                                            <span className="text-[10px] text-cyan-400/80 uppercase">STACK:</span>
+                                            <span className="text-cyan-300 font-bold">Laravel • React • Node</span>
+                                        </div>
+                                        <div className="p-2.5 rounded-xl bg-zinc-900/80 border border-cyan-500/20 flex items-center justify-between text-xs font-mono">
+                                            <span className="text-[10px] text-cyan-400/80 uppercase">STATUS:</span>
+                                            <span className="text-emerald-400 font-bold">Available for Hire</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.div>
+
+                            {/* Center Bottom Guidance Hint */}
+                            <div className="absolute bottom-6 inset-x-0 z-30 flex justify-center pointer-events-none">
+                                <div className="px-4 py-2 rounded-full bg-black/60 border border-cyan-500/30 backdrop-blur-md flex items-center gap-2 text-xs font-mono text-cyan-300 shadow-xl">
+                                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+                                    <span>SCROLL DOWN TO UNLOCK TECHNICAL SKILLS ARSENAL</span>
+                                    <ChevronDown className="w-3.5 h-3.5 animate-bounce text-cyan-400" />
                                 </div>
                             </div>
+                            {/* Mobile View: Single Compact Pilot Card at Bottom */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5, delay: 0.3 }}
+                                className="md:hidden absolute bottom-16 inset-x-3 z-30 pointer-events-auto"
+                            >
+                                <div className="relative glass-card rounded-2xl p-4 border border-cyan-500/40 bg-zinc-950/90 backdrop-blur-2xl shadow-[0_0_35px_rgba(6,182,212,0.2)] space-y-3 overflow-hidden">
+                                    <div className="absolute top-0 left-0 w-2.5 h-2.5 border-t-2 border-l-2 border-cyan-400" />
+                                    <div className="absolute top-0 right-0 w-2.5 h-2.5 border-t-2 border-r-2 border-cyan-400" />
+                                    <div className="absolute bottom-0 left-0 w-2.5 h-2.5 border-b-2 border-l-2 border-cyan-400" />
+                                    <div className="absolute bottom-0 right-0 w-2.5 h-2.5 border-b-2 border-r-2 border-cyan-400" />
+
+                                    <div className="flex items-center justify-between border-b border-cyan-500/20 pb-2">
+                                        <div className="flex items-center gap-1.5">
+                                            <Cpu className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+                                            <span className="font-mono text-[9px] text-cyan-400 uppercase font-bold tracking-wider">
+                                                PILOT IDENTIFICATION // NEURAL LINK
+                                            </span>
+                                        </div>
+                                        <span className="text-[9px] font-mono text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                                            ONLINE
+                                        </span>
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <span className="text-[9px] font-mono text-zinc-400 block tracking-wider">// DESIGNATION:</span>
+                                        <h2 className="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-cyan-300 font-mono tracking-tight uppercase flex items-center">
+                                            <span>{typedName || '\u00A0'}</span>
+                                            {!nameComplete && (
+                                                <span className="inline-block w-2 h-4 ml-1 bg-cyan-400 animate-pulse" />
+                                            )}
+                                        </h2>
+                                        <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30 text-[10px] font-mono text-cyan-300 font-bold">
+                                            <span>{profile?.role || 'Fullstack Developer'}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-3 gap-1.5 pt-1 text-[9px] font-mono">
+                                        <div className="p-1.5 rounded-lg bg-zinc-900/90 border border-white/5 text-center truncate">
+                                            <span className="text-zinc-400 block text-[8px]">LOC</span>
+                                            <span className="text-white font-bold truncate block">{profile?.location || 'Bali'}</span>
+                                        </div>
+                                        <div className="p-1.5 rounded-lg bg-zinc-900/90 border border-white/5 text-center truncate">
+                                            <span className="text-zinc-400 block text-[8px]">STACK</span>
+                                            <span className="text-cyan-300 font-bold truncate block">Laravel/React</span>
+                                        </div>
+                                        <div className="p-1.5 rounded-lg bg-zinc-900/90 border border-white/5 text-center truncate">
+                                            <span className="text-zinc-400 block text-[8px]">STATUS</span>
+                                            <span className="text-emerald-400 font-bold truncate block">Available</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.div>
                         </motion.div>
                     )}
                 </AnimatePresence>
 
                 {/* ========================================================================= */}
-                {/* SCENE 2: STANDING & INTRODUCING PILOT IDENTITY (Frame 77 - 156)           */}
-                {/* Mecha berdiri gagah di rooftop & memperkenalkan dirinya (identitas user) */}
+                {/* SCENE 2: ROBOTIC SKILLS CONNECTED TO MECHA BODY (Standing Frame 77 - 156)  */}
+                {/* 3 Skill di Kiri & 3 Skill di Kanan terhubung garis laser ke tubuh mecha   */}
                 {/* ========================================================================= */}
                 <AnimatePresence>
                     {isSummoned && currentPhase === 2 && (
                         <motion.div
-                            key="phase-identity"
-                            initial={{ opacity: 0, x: -50 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 50 }}
-                            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                            className="absolute inset-y-0 left-0 sm:left-10 md:left-16 z-30 flex items-center p-6 pointer-events-none max-w-xl"
+                            key="phase-robotic-skills"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.5 }}
+                            className="absolute inset-0 z-30 pointer-events-none"
                         >
-                            <div className="glass-card rounded-3xl p-7 sm:p-9 border border-purple-500/40 backdrop-blur-2xl shadow-2xl shadow-purple-950/40 pointer-events-auto space-y-6">
-                                {/* Pilot Header Tag */}
-                                <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className="p-2 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30">
-                                            <User className="w-4 h-4" />
-                                        </div>
-                                        <div>
-                                            <div className="font-mono text-[10px] text-purple-400 tracking-wider uppercase font-bold">
-                                                PILOT IDENTITY PROTOCOL
-                                            </div>
-                                            <div className="text-xs text-zinc-300 font-mono">
-                                                STATUS: STANDING READY
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-mono border border-emerald-500/20 flex items-center gap-1.5">
-                                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                                        ONLINE
-                                    </span>
-                                </div>
+                            {/* Laser Leader Lines from Mecha Body to 6 Skill Modules */}
+                            <svg className="absolute inset-0 w-full h-full pointer-events-none z-20 hidden md:block" viewBox="0 0 1000 1000" preserveAspectRatio="none">
+                                <defs>
+                                    <filter id="cyan-glow-2" x="-20%" y="-20%" width="140%" height="140%">
+                                        <feGaussianBlur stdDeviation="3" result="blur" />
+                                        <feMerge>
+                                            <feMergeNode in="blur" />
+                                            <feMergeNode in="SourceGraphic" />
+                                        </feMerge>
+                                    </filter>
+                                </defs>
 
-                                {/* Main Identity Intro */}
-                                <div className="space-y-2">
-                                    <span className="text-xs font-mono text-cyan-400 tracking-widest uppercase">
-                                        // MECHA INTRODUCES:
-                                    </span>
-                                    <h2 className="text-2xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white via-zinc-100 to-zinc-400 tracking-tight uppercase">
-                                        {profile?.name || 'I PUTU GEDE CANDRA PRATAMA'}
-                                    </h2>
-                                    <p className="text-lg font-bold text-purple-400">
-                                        {profile?.role || 'Fullstack Developer'}
-                                    </p>
-                                    <p className="text-sm text-zinc-400 leading-relaxed pt-1">
-                                        {profile?.about || 'Software Engineer berpengalaman dalam merancang dan membangun aplikasi web modern yang cepat, skalabel, serta berantarmuka interaktif.'}
-                                    </p>
-                                </div>
+                                {/* 6 Anchor Nodes on Mecha Body */}
+                                {/* Left Shoulder (435, 260) */}
+                                <circle cx="435" cy="260" r="4.5" fill="#22d3ee" filter="url(#cyan-glow-2)" />
+                                <circle cx="435" cy="260" r="8" fill="none" stroke="#22d3ee" strokeWidth="1" strokeDasharray="3 2" opacity="0.6" />
 
-                                {/* Identity Specs Grid */}
-                                <div className="grid grid-cols-2 gap-3 pt-2">
-                                    <div className="p-3 rounded-2xl bg-zinc-900/60 border border-white/5 space-y-1">
-                                        <span className="font-mono text-[10px] text-zinc-500 uppercase block">LOCATION</span>
-                                        <span className="text-xs font-bold text-zinc-200">
-                                            {profile?.location || 'Jembrana, Bali'}
-                                        </span>
-                                    </div>
-                                    <div className="p-3 rounded-2xl bg-zinc-900/60 border border-white/5 space-y-1">
-                                        <span className="font-mono text-[10px] text-zinc-500 uppercase block">PRIMARY STACK</span>
-                                        <span className="text-xs font-bold text-cyan-300">
-                                            Laravel • React • Node
-                                        </span>
-                                    </div>
-                                    <div className="p-3 rounded-2xl bg-zinc-900/60 border border-white/5 space-y-1">
-                                        <span className="font-mono text-[10px] text-zinc-500 uppercase block">EXPERIENCE</span>
-                                        <span className="text-xs font-bold text-purple-300">
-                                            2+ Years Building
-                                        </span>
-                                    </div>
-                                    <div className="p-3 rounded-2xl bg-zinc-900/60 border border-white/5 space-y-1">
-                                        <span className="font-mono text-[10px] text-zinc-500 uppercase block">STATUS</span>
-                                        <span className="text-xs font-bold text-emerald-400">
-                                            Available for Hire
-                                        </span>
-                                    </div>
-                                </div>
+                                {/* Left Core / Chest (450, 440) */}
+                                <circle cx="450" cy="440" r="4.5" fill="#22d3ee" filter="url(#cyan-glow-2)" />
+                                <circle cx="450" cy="440" r="8" fill="none" stroke="#22d3ee" strokeWidth="1" strokeDasharray="3 2" opacity="0.6" />
 
-                                {/* Step Hint to Next Stage */}
-                                <div className="pt-2 flex items-center justify-between text-xs text-zinc-400 border-t border-white/5">
-                                    <span className="font-mono text-[11px] text-zinc-500">
-                                        Scroll down untuk armor detachment
-                                    </span>
-                                    <ChevronDown className="w-4 h-4 text-purple-400 animate-bounce" />
+                                {/* Left Belt / Arm (435, 650) */}
+                                <circle cx="435" cy="650" r="4.5" fill="#22d3ee" filter="url(#cyan-glow-2)" />
+                                <circle cx="435" cy="650" r="8" fill="none" stroke="#22d3ee" strokeWidth="1" strokeDasharray="3 2" opacity="0.6" />
+
+                                {/* Right Shoulder (565, 260) */}
+                                <circle cx="565" cy="260" r="4.5" fill="#22d3ee" filter="url(#cyan-glow-2)" />
+                                <circle cx="565" cy="260" r="8" fill="none" stroke="#22d3ee" strokeWidth="1" strokeDasharray="3 2" opacity="0.6" />
+
+                                {/* Right Core / Chest (550, 440) */}
+                                <circle cx="550" cy="440" r="4.5" fill="#22d3ee" filter="url(#cyan-glow-2)" />
+                                <circle cx="550" cy="440" r="8" fill="none" stroke="#22d3ee" strokeWidth="1" strokeDasharray="3 2" opacity="0.6" />
+
+                                {/* Right Belt / Arm (565, 650) */}
+                                <circle cx="565" cy="650" r="4.5" fill="#22d3ee" filter="url(#cyan-glow-2)" />
+                                <circle cx="565" cy="650" r="8" fill="none" stroke="#22d3ee" strokeWidth="1" strokeDasharray="3 2" opacity="0.6" />
+
+                                {/* 3 Left 90-Degree Orthogonal Lines (Emerge from Mecha Body to Left Cards) */}
+                                {/* Line L1: Shoulder (435, 260) -> H 360 -> V 316 -> H 307 */}
+                                <motion.path
+                                    d="M 435 260 H 360 V 316 H 307"
+                                    stroke="#06b6d4"
+                                    strokeWidth="2"
+                                    strokeDasharray="6 3"
+                                    strokeDashoffset={lineDashOffset}
+                                    fill="none"
+                                    filter="url(#cyan-glow-2)"
+                                    initial={{ pathLength: 0, opacity: 0 }}
+                                    animate={{ pathLength: 1, opacity: 1 }}
+                                    transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
+                                />
+                                <circle cx="360" cy="316" r="2.5" fill="#22d3ee" />
+                                <circle cx="307" cy="316" r="3.5" fill="#22d3ee" />
+
+                                {/* Line L2: Core (450, 440) -> H 370 -> V 500 -> H 299 */}
+                                <motion.path
+                                    d="M 450 440 H 370 V 500 H 299"
+                                    stroke="#06b6d4"
+                                    strokeWidth="2"
+                                    strokeDasharray="6 3"
+                                    strokeDashoffset={lineDashOffset}
+                                    fill="none"
+                                    filter="url(#cyan-glow-2)"
+                                    initial={{ pathLength: 0, opacity: 0 }}
+                                    animate={{ pathLength: 1, opacity: 1 }}
+                                    transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.25 }}
+                                />
+                                <circle cx="370" cy="500" r="2.5" fill="#22d3ee" />
+                                <circle cx="299" cy="500" r="3.5" fill="#22d3ee" />
+
+                                {/* Line L3: Waist (435, 650) -> H 360 -> V 684 -> H 297 */}
+                                <motion.path
+                                    d="M 435 650 H 360 V 684 H 297"
+                                    stroke="#06b6d4"
+                                    strokeWidth="2"
+                                    strokeDasharray="6 3"
+                                    strokeDashoffset={lineDashOffset}
+                                    fill="none"
+                                    filter="url(#cyan-glow-2)"
+                                    initial={{ pathLength: 0, opacity: 0 }}
+                                    animate={{ pathLength: 1, opacity: 1 }}
+                                    transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.35 }}
+                                />
+                                <circle cx="360" cy="684" r="2.5" fill="#22d3ee" />
+                                <circle cx="297" cy="684" r="3.5" fill="#22d3ee" />
+
+                                {/* 3 Right 90-Degree Orthogonal Lines (Emerge from Mecha Body to Right Cards) */}
+                                {/* Line R1: Shoulder (565, 260) -> H 640 -> V 316 -> H 693 */}
+                                <motion.path
+                                    d="M 565 260 H 640 V 316 H 693"
+                                    stroke="#06b6d4"
+                                    strokeWidth="2"
+                                    strokeDasharray="6 3"
+                                    strokeDashoffset={lineDashOffset}
+                                    fill="none"
+                                    filter="url(#cyan-glow-2)"
+                                    initial={{ pathLength: 0, opacity: 0 }}
+                                    animate={{ pathLength: 1, opacity: 1 }}
+                                    transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
+                                />
+                                <circle cx="640" cy="316" r="2.5" fill="#22d3ee" />
+                                <circle cx="693" cy="316" r="3.5" fill="#22d3ee" />
+
+                                {/* Line R2: Core (550, 440) -> H 630 -> V 500 -> H 701 */}
+                                <motion.path
+                                    d="M 550 440 H 630 V 500 H 701"
+                                    stroke="#06b6d4"
+                                    strokeWidth="2"
+                                    strokeDasharray="6 3"
+                                    strokeDashoffset={lineDashOffset}
+                                    fill="none"
+                                    filter="url(#cyan-glow-2)"
+                                    initial={{ pathLength: 0, opacity: 0 }}
+                                    animate={{ pathLength: 1, opacity: 1 }}
+                                    transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.25 }}
+                                />
+                                <circle cx="630" cy="500" r="2.5" fill="#22d3ee" />
+                                <circle cx="701" cy="500" r="3.5" fill="#22d3ee" />
+
+                                {/* Line R3: Waist (565, 650) -> H 640 -> V 684 -> H 703 */}
+                                <motion.path
+                                    d="M 565 650 H 640 V 684 H 703"
+                                    stroke="#06b6d4"
+                                    strokeWidth="2"
+                                    strokeDasharray="6 3"
+                                    strokeDashoffset={lineDashOffset}
+                                    fill="none"
+                                    filter="url(#cyan-glow-2)"
+                                    initial={{ pathLength: 0, opacity: 0 }}
+                                    animate={{ pathLength: 1, opacity: 1 }}
+                                    transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.35 }}
+                                />
+                                <circle cx="640" cy="684" r="2.5" fill="#22d3ee" />
+                                <circle cx="703" cy="684" r="3.5" fill="#22d3ee" />
+                            </svg>
+
+                            {/* Top Subsystem Status Header */}
+                            <div className="absolute top-6 inset-x-0 z-30 flex justify-center pointer-events-none">
+                                <div className="px-4 py-1.5 rounded-full bg-black/60 border border-cyan-500/30 backdrop-blur-md flex items-center gap-3 text-xs font-mono text-cyan-300 shadow-xl">
+                                    <Cpu className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+                                    <span>SUBSYSTEM ARSENAL: 6 MODULES SYNCHRONIZED WITH BODY</span>
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                                 </div>
                             </div>
+
+                            {/* Left Column: 3 Skill Cards (Backend, Frontend, Database) */}
+                            {/* Left Column: 3 Skill Cards (Desktop Only) */}
+                            <div className="hidden md:flex absolute inset-y-0 left-3 sm:left-6 lg:left-12 z-30 flex-col justify-center gap-3 max-w-xs sm:max-w-sm w-full pointer-events-auto">
+                                {skills.slice(0, 3).map((skill, idx) => {
+                                    const meta = SKILL_METRICS[skill.name] || {
+                                        serial: `MOD_0${idx + 1} // SYS`,
+                                        efficiency: 90,
+                                        status: 'ACTIVE',
+                                        tags: [skill.category],
+                                        icon: Layers
+                                    };
+                                    const IconComp = meta.icon || Layers;
+                                    const yParallax = idx === 0 ? p2Center * -0.4 : idx === 1 ? p2Center * -0.1 : p2Center * 0.35;
+                                    const scrollCharge = Math.min(1, Math.max(0.2, (currentFrame - 77) / 55));
+                                    const filled = Math.min(8, Math.max(1, Math.round(((meta.efficiency / 100) * 8) * scrollCharge)));
+
+                                    return (
+                                        <motion.div
+                                            key={skill.name}
+                                            initial={{ opacity: 0, x: -30 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ duration: 0.4, delay: idx * 0.1 }}
+                                            style={{
+                                                transform: `translateY(${yParallax}px)`
+                                            }}
+                                            className="p-3 sm:p-3.5 rounded-xl bg-zinc-950/85 border border-cyan-500/30 hover:border-cyan-400/60 transition-all space-y-2 relative overflow-hidden group shadow-[0_0_25px_rgba(6,182,212,0.12)]"
+                                        >
+                                            {/* Corner Bracket */}
+                                            <div className="absolute top-0 right-0 w-2.5 h-2.5 border-t-2 border-r-2 border-cyan-400/80" />
+                                            <div className="absolute bottom-0 left-0 w-2.5 h-2.5 border-b-2 border-l-2 border-cyan-400/80" />
+
+                                            <div className="flex items-center justify-between text-[8px] font-mono">
+                                                <span className="text-cyan-400 uppercase font-bold tracking-wider">
+                                                    {meta.serial}
+                                                </span>
+                                                <span className="text-white font-bold bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20">
+                                                    {meta.efficiency}%
+                                                </span>
+                                            </div>
+
+                                            <div className="flex items-center gap-2">
+                                                <div className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 shrink-0">
+                                                    <IconComp className="w-3.5 h-3.5" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <h4 className="text-xs font-bold text-white group-hover:text-cyan-200 transition-colors truncate">
+                                                        {skill.name}
+                                                    </h4>
+                                                    <span className="text-[9px] text-purple-400 font-mono block">
+                                                        {skill.category}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-wrap gap-1">
+                                                {meta.tags.map((t, tIdx) => (
+                                                    <span
+                                                        key={tIdx}
+                                                        className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-black/60 text-cyan-300/90 border border-cyan-500/20"
+                                                    >
+                                                        {t}
+                                                    </span>
+                                                ))}
+                                            </div>
+
+                                            {/* Segmented Power Bar */}
+                                            <div className="flex items-center gap-0.5 w-full bg-black/50 p-0.5 rounded border border-white/5">
+                                                {Array.from({ length: 8 }).map((_, sIdx) => (
+                                                    <div
+                                                        key={sIdx}
+                                                        className={`h-1 flex-1 rounded-xs ${
+                                                            sIdx < filled
+                                                                ? 'bg-gradient-to-r from-cyan-400 to-purple-500 shadow-[0_0_5px_rgba(6,182,212,0.8)]'
+                                                                 : 'bg-zinc-800'
+                                                         }`}
+                                                     />
+                                                 ))}
+                                             </div>
+                                        </motion.div>
+                                    );
+                                })}
+                             </div>
+
+                            {/* Right Column: 3 Skill Cards (Design, Architecture, DevOps) */}
+                            {/* Right Column: 3 Skill Cards (Desktop Only) */}
+                            <div className="hidden md:flex absolute inset-y-0 right-3 sm:right-6 lg:right-12 z-30 flex-col justify-center gap-3 max-w-xs sm:max-w-sm w-full pointer-events-auto">
+                                {skills.slice(3, 6).map((skill, idx) => {
+                                    const meta = SKILL_METRICS[skill.name] || {
+                                        serial: `MOD_0${idx + 4} // SYS`,
+                                        efficiency: 90,
+                                        status: 'ACTIVE',
+                                        tags: [skill.category],
+                                        icon: Layers
+                                    };
+                                    const IconComp = meta.icon || Layers;
+                                    const yParallax = idx === 0 ? p2Center * -0.4 : idx === 1 ? p2Center * -0.1 : p2Center * 0.35;
+                                    const scrollCharge = Math.min(1, Math.max(0.2, (currentFrame - 77) / 55));
+                                    const filled = Math.min(8, Math.max(1, Math.round(((meta.efficiency / 100) * 8) * scrollCharge)));
+
+                                    return (
+                                        <motion.div
+                                            key={skill.name}
+                                            initial={{ opacity: 0, x: 30 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ duration: 0.4, delay: idx * 0.1 }}
+                                            style={{
+                                                transform: `translateY(${yParallax}px)`
+                                            }}
+                                            className="p-3 sm:p-3.5 rounded-xl bg-zinc-950/85 border border-cyan-500/30 hover:border-cyan-400/60 transition-all space-y-2 relative overflow-hidden group shadow-[0_0_25px_rgba(6,182,212,0.12)]"
+                                        >
+                                            {/* Corner Bracket */}
+                                            <div className="absolute top-0 left-0 w-2.5 h-2.5 border-t-2 border-l-2 border-cyan-400/80" />
+                                            <div className="absolute bottom-0 right-0 w-2.5 h-2.5 border-b-2 border-r-2 border-cyan-400/80" />
+
+                                            <div className="flex items-center justify-between text-[8px] font-mono">
+                                                <span className="text-cyan-400 uppercase font-bold tracking-wider">
+                                                    {meta.serial}
+                                                </span>
+                                                <span className="text-white font-bold bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20">
+                                                    {meta.efficiency}%
+                                                </span>
+                                            </div>
+
+                                            <div className="flex items-center gap-2">
+                                                <div className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 shrink-0">
+                                                    <IconComp className="w-3.5 h-3.5" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <h4 className="text-xs font-bold text-white group-hover:text-cyan-200 transition-colors truncate">
+                                                        {skill.name}
+                                                    </h4>
+                                                    <span className="text-[9px] text-purple-400 font-mono block">
+                                                        {skill.category}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-wrap gap-1">
+                                                {meta.tags.map((t, tIdx) => (
+                                                    <span
+                                                        key={tIdx}
+                                                        className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-black/60 text-cyan-300/90 border border-cyan-500/20"
+                                                    >
+                                                        {t}
+                                                    </span>
+                                                ))}
+                                            </div>
+
+                                            {/* Segmented Power Bar */}
+                                            <div className="flex items-center gap-0.5 w-full bg-black/50 p-0.5 rounded border border-white/5">
+                                                {Array.from({ length: 8 }).map((_, sIdx) => (
+                                                    <div
+                                                        key={sIdx}
+                                                        className={`h-1 flex-1 rounded-xs ${
+                                                            sIdx < filled
+                                                                ? 'bg-gradient-to-r from-cyan-400 to-purple-500 shadow-[0_0_5px_rgba(6,182,212,0.8)]'
+                                                                : 'bg-zinc-800'
+                                                        }`}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </motion.div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Center Bottom Guidance Hint */}
+                            <div className="absolute bottom-6 inset-x-0 z-30 flex justify-center pointer-events-none">
+                                <div className="px-4 py-2 rounded-full bg-black/60 border border-cyan-500/30 backdrop-blur-md flex items-center gap-2 text-xs font-mono text-cyan-300 shadow-xl">
+                                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+                                    <span>SCROLL DOWN TO DEPLOY ARMOR MATRIX &amp; PROJECTS</span>
+                                    <ChevronDown className="w-3.5 h-3.5 animate-bounce text-cyan-400" />
+                                </div>
+                            </div>
+                            {/* Mobile View: Compact 2-Column Grid at Bottom */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5 }}
+                                className="md:hidden absolute bottom-14 inset-x-2.5 z-30 pointer-events-auto space-y-1.5"
+                            >
+                                <div className="text-center">
+                                    <span className="px-3 py-1 rounded-full bg-black/75 border border-cyan-500/30 text-[9px] font-mono text-cyan-300 uppercase tracking-wider backdrop-blur-md">
+                                        TECHNICAL ARSENAL • 6 MODULES
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-1.5">
+                                    {skills.map((skill, idx) => {
+                                        const meta = SKILL_METRICS[skill.name] || {
+                                            serial: `MOD_0${idx + 1}`,
+                                            efficiency: 90,
+                                            icon: Layers
+                                        };
+                                        const IconComp = meta.icon || Layers;
+                                        return (
+                                            <div
+                                                key={skill.name}
+                                                className="p-2 rounded-xl bg-zinc-950/90 border border-cyan-500/30 backdrop-blur-xl space-y-1 relative"
+                                            >
+                                                <div className="flex items-center justify-between text-[8px] font-mono text-cyan-400">
+                                                    <span>{meta.serial}</span>
+                                                    <span className="text-white font-bold">{meta.efficiency}%</span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5 min-w-0">
+                                                    <IconComp className="w-3.5 h-3.5 text-cyan-300 shrink-0" />
+                                                    <h4 className="text-[10px] font-bold text-white truncate">{skill.name}</h4>
+                                                </div>
+                                                <div className="h-1 w-full bg-zinc-800 rounded-xs overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-gradient-to-r from-cyan-400 to-purple-500"
+                                                        style={{ width: `${meta.efficiency}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </motion.div>
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -568,68 +1154,87 @@ export default function ScrollyExperience({ profile, onSummonChange }) {
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 1.05 }}
                             transition={{ duration: 0.6 }}
-                            className="absolute inset-0 z-30 flex flex-col justify-between p-6 sm:p-12 pointer-events-none"
+                            className="absolute inset-0 z-30 pointer-events-none"
                         >
-                            {/* Top Hologram Title */}
-                            <div className="text-center pt-8 pointer-events-auto">
-                                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-pink-500/10 border border-pink-500/30 text-pink-400 font-mono text-xs uppercase tracking-widest mb-2 backdrop-blur-md">
-                                    <Shield className="w-3.5 h-3.5 animate-pulse" />
+                            {/* Top Minimalist Hologram Badge (Positioned high so head is never covered) */}
+                            <div className="absolute top-5 inset-x-0 z-30 flex justify-center pointer-events-none">
+                                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/65 border border-pink-500/40 text-pink-300 font-mono text-xs uppercase tracking-widest backdrop-blur-md shadow-2xl">
+                                    <Shield className="w-3.5 h-3.5 animate-pulse text-pink-400" />
                                     <span>STAGE 03 • ARMOR DETACHMENT // PROJECT MATRIX</span>
                                 </div>
-                                <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight uppercase">
-                                    PECAHAN ARMOR & PROYEK TERPILIH
-                                </h2>
-                                <p className="text-xs sm:text-sm text-zinc-400 mt-1 max-w-xl mx-auto">
-                                    Setiap pecahan armor yang terlepas membawa modul sistem dan portofolio karya yang telah dirancang.
-                                </p>
                             </div>
 
-                            {/* The 3 Floating Armor Shard Project Cards */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto w-full mb-6 pointer-events-auto">
-                                {projects.map((proj, idx) => (
+                            {/* Floating Shard Laser Tether Lines SVG */}
+                            <svg className="absolute inset-0 w-full h-full pointer-events-none z-20 hidden md:block" viewBox="0 0 1000 1000" preserveAspectRatio="none">
+                                <defs>
+                                    <filter id="pink-glow" x="-20%" y="-20%" width="140%" height="140%">
+                                        <feGaussianBlur stdDeviation="3" result="blur" />
+                                        <feMerge>
+                                            <feMergeNode in="blur" />
+                                            <feMergeNode in="SourceGraphic" />
+                                        </feMerge>
+                                    </filter>
+                                </defs>
+                                <path d="M 370 340 H 295" stroke="#f472b6" strokeWidth="2" strokeDasharray="5 3" fill="none" opacity="0.7" filter="url(#pink-glow)" />
+                                <circle cx="370" cy="340" r="3.5" fill="#f472b6" />
+                                <circle cx="295" cy="340" r="3.5" fill="#f472b6" />
+
+                                <path d="M 370 660 H 295" stroke="#f472b6" strokeWidth="2" strokeDasharray="5 3" fill="none" opacity="0.7" filter="url(#pink-glow)" />
+                                <circle cx="370" cy="660" r="3.5" fill="#f472b6" />
+                                <circle cx="295" cy="660" r="3.5" fill="#f472b6" />
+
+                                <path d="M 630 340 H 705" stroke="#f472b6" strokeWidth="2" strokeDasharray="5 3" fill="none" opacity="0.7" filter="url(#pink-glow)" />
+                                <circle cx="630" cy="340" r="3.5" fill="#f472b6" />
+                                <circle cx="705" cy="340" r="3.5" fill="#f472b6" />
+
+                                <path d="M 630 660 H 705" stroke="#f472b6" strokeWidth="2" strokeDasharray="5 3" fill="none" opacity="0.7" filter="url(#pink-glow)" />
+                                <circle cx="630" cy="660" r="3.5" fill="#f472b6" />
+                                <circle cx="705" cy="660" r="3.5" fill="#f472b6" />
+                            </svg>
+
+                            {/* Left Column: Floating Armor Shards #1 & #2 (Mecha in center is 100% clear) */}
+                            {/* Left Column: Floating Armor Shards #1 & #2 (Desktop Only) */}
+                            <div className="hidden md:flex absolute inset-y-0 left-3 sm:left-6 lg:left-12 z-30 flex-col justify-center gap-3.5 max-w-xs sm:max-w-sm w-full pointer-events-auto">
+                                {projects.slice(0, 2).map((proj, idx) => (
                                     <motion.div
                                         key={proj.id}
-                                        initial={{ opacity: 0, y: 40, rotate: idx === 0 ? -3 : idx === 2 ? 3 : 0 }}
-                                        animate={{ opacity: 1, y: 0, rotate: 0 }}
+                                        initial={{ opacity: 0, x: -30 }}
+                                        animate={{ opacity: 1, x: 0 }}
                                         transition={{ duration: 0.5, delay: idx * 0.15 }}
-                                        whileHover={{ y: -8, scale: 1.02 }}
-                                        className="relative group glass-card rounded-2xl p-6 border border-cyan-500/30 hover:border-purple-400/60 shadow-2xl backdrop-blur-2xl flex flex-col justify-between transition-all duration-300"
+                                        className="relative group glass-card rounded-2xl p-4 sm:p-5 border border-pink-500/30 bg-zinc-950/85 hover:border-pink-400/60 shadow-2xl backdrop-blur-2xl flex flex-col justify-between transition-all duration-300"
                                     >
-                                        {/* Shard Corner Glow */}
-                                        <div className="absolute -top-2 -right-2 w-10 h-10 bg-cyan-400/20 rounded-full blur-lg group-hover:bg-purple-400/40 transition-colors" />
+                                        {/* Shard Corner Bracket */}
+                                        <div className="absolute top-0 left-0 w-2.5 h-2.5 border-t-2 border-l-2 border-pink-400/80" />
+                                        <div className="absolute bottom-0 right-0 w-2.5 h-2.5 border-b-2 border-r-2 border-pink-400/80" />
 
-                                        <div className="space-y-3">
-                                            {/* Shard ID Header */}
-                                            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                                        <div className="space-y-2.5">
+                                            <div className="flex items-center justify-between border-b border-white/10 pb-2">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-                                                    <span className="font-mono text-[11px] text-cyan-300 font-bold uppercase tracking-wider">
+                                                    <span className="w-2 h-2 rounded-full bg-pink-400 animate-pulse" />
+                                                    <span className="font-mono text-[10px] text-pink-300 font-bold uppercase tracking-wider">
                                                         ARMOR SHARD #{idx + 1}
                                                     </span>
                                                 </div>
-                                                <span className="font-mono text-[10px] text-zinc-500">
-                                                    STATUS: ACTIVE
+                                                <span className="font-mono text-[9px] text-zinc-400 bg-pink-500/10 px-1.5 py-0.5 rounded border border-pink-500/20">
+                                                    ACTIVE
                                                 </span>
                                             </div>
 
-                                            {/* Title */}
-                                            <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-cyan-300 transition-colors">
+                                            <h3 className="text-sm sm:text-base font-bold text-white group-hover:text-pink-300 transition-colors">
                                                 {proj.title}
                                             </h3>
 
-                                            {/* Description */}
-                                            <p className="text-xs text-zinc-400 leading-relaxed line-clamp-3">
+                                            <p className="text-xs text-zinc-400 leading-relaxed line-clamp-2">
                                                 {proj.description}
                                             </p>
                                         </div>
 
-                                        {/* Tags & Action Links */}
-                                        <div className="pt-4 space-y-4">
-                                            <div className="flex flex-wrap gap-1.5">
+                                        <div className="pt-3 space-y-2.5">
+                                            <div className="flex flex-wrap gap-1">
                                                 {proj.tags.map((tag, tIdx) => (
                                                     <span
                                                         key={tIdx}
-                                                        className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900/90 text-cyan-300/90 border border-cyan-500/20"
+                                                        className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-zinc-900/90 text-pink-300/90 border border-pink-500/20"
                                                     >
                                                         {tag}
                                                     </span>
@@ -639,7 +1244,7 @@ export default function ScrollyExperience({ profile, onSummonChange }) {
                                             <div className="flex items-center justify-between pt-2 border-t border-white/5">
                                                 <a
                                                     href={proj.demo}
-                                                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition-colors"
+                                                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-pink-400 hover:text-pink-300 transition-colors"
                                                 >
                                                     <span>Buka Modul</span>
                                                     <ExternalLink className="w-3.5 h-3.5" />
@@ -657,14 +1262,152 @@ export default function ScrollyExperience({ profile, onSummonChange }) {
                                 ))}
                             </div>
 
-                            {/* Bottom Guidance */}
-                            <div className="text-center pb-2 pointer-events-auto">
-                                <a
-                                    href="#skills"
-                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-zinc-900/90 border border-white/10 text-xs font-medium text-zinc-300 hover:text-white hover:border-purple-500/50 transition-all backdrop-blur-md shadow-lg"
+                            {/* Right Column: Floating Armor Shard #3 & Project Matrix Telemetry */}
+                            {/* Right Column: Floating Armor Shard #3 & Project Matrix Telemetry (Desktop Only) */}
+                            <div className="hidden md:flex absolute inset-y-0 right-3 sm:right-6 lg:right-12 z-30 flex-col justify-center gap-3.5 max-w-xs sm:max-w-sm w-full pointer-events-auto">
+                                {projects.slice(2, 3).map((proj) => (
+                                    <motion.div
+                                        key={proj.id}
+                                        initial={{ opacity: 0, x: 30 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ duration: 0.5, delay: 0.3 }}
+                                        className="relative group glass-card rounded-2xl p-4 sm:p-5 border border-pink-500/30 bg-zinc-950/85 hover:border-pink-400/60 shadow-2xl backdrop-blur-2xl flex flex-col justify-between transition-all duration-300"
+                                    >
+                                        {/* Shard Corner Bracket */}
+                                        <div className="absolute top-0 right-0 w-2.5 h-2.5 border-t-2 border-r-2 border-pink-400/80" />
+                                        <div className="absolute bottom-0 left-0 w-2.5 h-2.5 border-b-2 border-l-2 border-pink-400/80" />
+
+                                        <div className="space-y-2.5">
+                                            <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="w-2 h-2 rounded-full bg-pink-400 animate-pulse" />
+                                                    <span className="font-mono text-[10px] text-pink-300 font-bold uppercase tracking-wider">
+                                                        ARMOR SHARD #3
+                                                    </span>
+                                                </div>
+                                                <span className="font-mono text-[9px] text-zinc-400 bg-pink-500/10 px-1.5 py-0.5 rounded border border-pink-500/20">
+                                                    ACTIVE
+                                                </span>
+                                            </div>
+
+                                            <h3 className="text-sm sm:text-base font-bold text-white group-hover:text-pink-300 transition-colors">
+                                                {proj.title}
+                                            </h3>
+
+                                            <p className="text-xs text-zinc-400 leading-relaxed line-clamp-2">
+                                                {proj.description}
+                                            </p>
+                                        </div>
+
+                                        <div className="pt-3 space-y-2.5">
+                                            <div className="flex flex-wrap gap-1">
+                                                {proj.tags.map((tag, tIdx) => (
+                                                    <span
+                                                        key={tIdx}
+                                                        className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-zinc-900/90 text-pink-300/90 border border-pink-500/20"
+                                                    >
+                                                        {tag}
+                                                    </span>
+                                                ))}
+                                            </div>
+
+                                            <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                                                <a
+                                                    href={proj.demo}
+                                                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-pink-400 hover:text-pink-300 transition-colors"
+                                                >
+                                                    <span>Buka Modul</span>
+                                                    <ExternalLink className="w-3.5 h-3.5" />
+                                                </a>
+                                                <a
+                                                    href={proj.github}
+                                                    className="text-zinc-500 hover:text-white transition-colors"
+                                                    title="GitHub Repo"
+                                                >
+                                                    <GitBranch className="w-4 h-4" />
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))}
+
+                                {/* Additional Shard Matrix Telemetry Panel */}
+                                <motion.div
+                                    initial={{ opacity: 0, x: 30 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ duration: 0.5, delay: 0.4 }}
+                                    className="relative glass-card rounded-2xl p-4 sm:p-5 border border-pink-500/25 bg-zinc-950/80 backdrop-blur-2xl space-y-2.5 shadow-xl"
                                 >
-                                    <span>Lanjut ke Modul Skills & Kontak di Bawah</span>
-                                    <ChevronDown className="w-4 h-4" />
+                                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                                        <span className="font-mono text-[10px] text-pink-400 font-bold uppercase tracking-wider">
+                                            REPOSITORY TELEMETRY
+                                        </span>
+                                        <span className="text-[9px] font-mono text-emerald-400 flex items-center gap-1">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                            ALL REPOS DEPLOYED
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-zinc-300 leading-relaxed font-sans">
+                                        Pecahan armor mecha membawa modul arsitektur fullstack, real-time sync audio, dan SSO hub.
+                                    </p>
+                                    <div className="flex items-center justify-between text-[10px] font-mono pt-1 text-zinc-400 border-t border-white/5">
+                                        <span>STATUS: PRODUCTION</span>
+                                        <span className="text-pink-400 font-bold">100% SYNCHRONIZED</span>
+                                    </div>
+                                </motion.div>
+                            </div>
+                            {/* Mobile View: Swipeable Horizontal Shard Deck */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5 }}
+                                className="md:hidden absolute bottom-14 inset-x-0 z-30 pointer-events-auto space-y-2"
+                            >
+                                <div className="text-center">
+                                    <span className="px-3 py-1 rounded-full bg-black/75 border border-pink-500/30 text-[9px] font-mono text-pink-300 uppercase tracking-wider backdrop-blur-md">
+                                        ARMOR SHARDS • SWIPE HORIZONTALLY ➔
+                                    </span>
+                                </div>
+                                <div className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory px-4 pb-2 no-scrollbar">
+                                    {projects.map((proj, idx) => (
+                                        <div
+                                            key={proj.id}
+                                            className="snap-center shrink-0 w-[270px] p-3.5 rounded-2xl bg-zinc-950/90 border border-pink-500/40 backdrop-blur-xl shadow-2xl space-y-2 flex flex-col justify-between"
+                                        >
+                                            <div className="space-y-1">
+                                                <div className="flex items-center justify-between border-b border-white/10 pb-1">
+                                                    <span className="font-mono text-[9px] text-pink-300 font-bold uppercase">
+                                                        ARMOR SHARD #{idx + 1}
+                                                    </span>
+                                                    <span className="text-[8px] font-mono text-zinc-400 bg-pink-500/10 px-1.5 py-0.5 rounded border border-pink-500/20">
+                                                        ACTIVE
+                                                    </span>
+                                                </div>
+                                                <h4 className="text-xs font-bold text-white truncate">{proj.title}</h4>
+                                                <p className="text-[10px] text-zinc-400 leading-relaxed line-clamp-2">{proj.description}</p>
+                                            </div>
+                                            <div className="pt-2 flex items-center justify-between border-t border-white/5">
+                                                <a href={proj.demo} className="text-[10px] font-semibold text-pink-400 flex items-center gap-1">
+                                                    <span>Buka Modul</span>
+                                                    <ExternalLink className="w-3 h-3" />
+                                                </a>
+                                                <a href={proj.github} className="text-zinc-500 hover:text-white">
+                                                    <GitBranch className="w-3.5 h-3.5" />
+                                                </a>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </motion.div>
+
+                            {/* Bottom Guidance */}
+                            <div className="absolute bottom-5 inset-x-0 z-30 flex justify-center pointer-events-none">
+                                <a
+                                    href="#experience"
+                                    className="pointer-events-auto inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-zinc-900/90 border border-white/10 text-xs font-medium text-zinc-300 hover:text-white hover:border-pink-500/50 transition-all backdrop-blur-md shadow-xl"
+                                >
+                                    <span>Lanjut ke Experience &amp; Kontak di Bawah</span>
+                                    <ChevronDown className="w-4 h-4 text-pink-400 animate-bounce" />
                                 </a>
                             </div>
                         </motion.div>
