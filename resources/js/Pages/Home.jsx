@@ -24,11 +24,12 @@ export default function Home({ profile }) {
             {/* Moving Particle Network Background */}
             <ParticleNetworkBackground />
 
-            {/* Ambient Background Glows */}
-            <div className="ambient-glow w-[500px] h-[500px] bg-purple-900/15 -top-40 -left-40 pointer-events-none z-0" />
-            <div className="ambient-glow w-[600px] h-[600px] bg-cyan-900/10 top-1/3 -right-40 pointer-events-none z-0" />
-            <div className="ambient-glow w-[500px] h-[500px] bg-indigo-900/15 bottom-10 left-1/4 pointer-events-none z-0" />
-
+            {/* Ambient Background Glows Container - fixed to viewport so it never causes horizontal scroll */}
+            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+                <div className="ambient-glow w-[500px] h-[500px] bg-purple-900/15 -top-40 -left-40" />
+                <div className="ambient-glow w-[600px] h-[600px] bg-cyan-900/10 top-1/3 -right-40" />
+                <div className="ambient-glow w-[500px] h-[500px] bg-indigo-900/15 bottom-10 left-1/4" />
+            </div>
             {/* HERO SCROLLYEXPERIENCE CONTAINER */}
             <main>
                 <ScrollyExperience profile={profile} onSummonChange={setIsSummoned} />
