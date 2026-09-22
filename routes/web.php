@@ -13,21 +13,22 @@ Route::get('/', function () {
             'avatar' => '/images/profile.webp',
             'about' => 'Software Engineer berpengalaman dalam merancang & membangun aplikasi web modern yang cepat, skalabel, serta berantarmuka intuitif.',
             'skills' => [
-                ['name' => 'Laravel & PHP', 'category' => 'Backend', 'level' => 'Advanced'],
-                ['name' => 'React & Next.js', 'category' => 'Frontend', 'level' => 'Advanced'],
-                ['name' => 'PostgreSQL & MySQL', 'category' => 'Database', 'level' => 'Intermediate'],
-                ['name' => 'TailwindCSS & UI/UX', 'category' => 'Design', 'level' => 'Advanced'],
-                ['name' => 'REST API & WebSockets', 'category' => 'Architecture', 'level' => 'Advanced'],
-                ['name' => 'Git & Docker', 'category' => 'DevOps', 'level' => 'Intermediate'],
+                ['name' => 'Laravel, PHP, Golang', 'category' => 'Backend'],
+                ['name' => 'React & Next.js', 'category' => 'Frontend'],
+                ['name' => 'PostgreSQL, MySQL, SQL Server', 'category' => 'Database'],
+                ['name' => 'TailwindCSS & UI/UX', 'category' => 'Design'],
+                ['name' => 'REST API & WebSockets', 'category' => 'Architecture'],
+                ['name' => 'Git & Docker', 'category' => 'DevOps'],
             ],
             'projects' => [
                 [
                     'id' => 1,
-                    'title' => 'Sistem Informasi Preskripsi & Farmasi',
-                    'description' => 'Aplikasi manajemen stok obat real-time dan sistem preskripsi pasien terintegrasi dengan penanganan validasi transaksi.',
-                    'tags' => ['Laravel', 'PostgreSQL', 'TailwindCSS'],
-                    'github' => '#',
-                    'demo' => '#',
+                    'title' => 'Angry Birds 3D Web Game',
+                    'description' => 'Game 3D ketapel interaktif dengan simulasi fisika trajektori gravitasi (Rapier), peruntuhan struktur balok es/kayu/batu, dan WebGL Three.js.',
+                    'tags' => ['Three.js', 'React Three Fiber', 'Rapier Physics', 'Zustand'],
+                    'github' => 'https://github.com/acannnz/angry_bird',
+                    'demo' => 'https://burungngamuk.arcand.my.id/',
+                    'image' => '/images/angry_birds.webp',
                     'featured' => true
                 ],
                 [

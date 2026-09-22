@@ -336,55 +336,61 @@ export default function ScrollyExperience({ profile, onSummonChange }) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
     const skills = profile?.skills || [
-        { name: 'Laravel & PHP', category: 'Backend', level: 'Advanced' },
-        { name: 'React & Next.js', category: 'Frontend', level: 'Advanced' },
-        { name: 'PostgreSQL & MySQL', category: 'Database', level: 'Intermediate' },
-        { name: 'TailwindCSS & UI/UX', category: 'Design', level: 'Advanced' },
-        { name: 'REST API & WebSockets', category: 'Architecture', level: 'Advanced' },
-        { name: 'Git & Docker', category: 'DevOps', level: 'Intermediate' },
+        { name: 'Laravel, PHP, Golang', category: 'Backend' },
+        { name: 'React & Next.js', category: 'Frontend' },
+        { name: 'PostgreSQL, MySQL, SQL Server', category: 'Database' },
+        { name: 'TailwindCSS & UI/UX', category: 'Design' },
+        { name: 'REST API & WebSockets', category: 'Architecture' },
+        { name: 'Git & Docker', category: 'DevOps' },
     ];
 
     const SKILL_METRICS = {
+        'Laravel, PHP, Golang': {
+            serial: 'MOD_01 // BACKEND',
+            status: 'CORE_ENGINE',
+            tags: ['Laravel', 'PHP', 'Golang'],
+            icon: Server,
+        },
         'Laravel & PHP': {
             serial: 'MOD_01 // BACKEND',
-            efficiency: 96,
-            status: 'OVERCLOCKED',
-            tags: ['Eloquent ORM', 'Queue Architecture'],
+            status: 'CORE_ENGINE',
+            tags: ['Laravel', 'PHP', 'Golang'],
             icon: Server,
         },
         'React & Next.js': {
             serial: 'MOD_02 // FRONTEND',
-            efficiency: 94,
-            status: 'SYNCHRONIZED',
-            tags: ['Next.js SSR', 'Framer Motion'],
+            status: 'INTERFACE',
+            tags: ['React.js', 'Next.js', 'Framer Motion'],
             icon: Code2,
+        },
+        'PostgreSQL, MySQL, SQL Server': {
+            serial: 'MOD_03 // DATABASE',
+            status: 'DATA_CORE',
+            tags: ['PostgreSQL', 'MySQL', 'SQL Server'],
+            icon: Database,
         },
         'PostgreSQL & MySQL': {
             serial: 'MOD_03 // DATABASE',
-            efficiency: 88,
-            status: 'CALIBRATED',
-            tags: ['Indexing & Partition', 'ACID Security'],
+            status: 'DATA_CORE',
+            tags: ['PostgreSQL', 'MySQL', 'SQL Server'],
             icon: Database,
         },
         'TailwindCSS & UI/UX': {
             serial: 'MOD_04 // DESIGN',
-            efficiency: 95,
-            status: 'HIGH_FIDELITY',
-            tags: ['Design Tokens', '60FPS Responsive'],
+            status: 'VISUAL_SYSTEM',
+            tags: ['TailwindCSS', 'Cyberpunk HUD', 'UI/UX'],
             icon: Zap,
         },
         'REST API & WebSockets': {
             serial: 'MOD_05 // ARCHITECTURE',
-            efficiency: 92,
-            status: 'LOW_LATENCY',
-            tags: ['WebSockets', 'Pub/Sub Events'],
+            status: 'NETWORKING',
+            tags: ['RESTful API', 'WebSockets', 'Real-time'],
             icon: Network,
         },
         'Git & Docker': {
             serial: 'MOD_06 // DEVOPS',
-            efficiency: 89,
-            status: 'CONTAINERIZED',
-            tags: ['Docker Compose', 'CI/CD Flow'],
+            status: 'DEPLOYMENT',
+            tags: ['Git Flow', 'Docker Container', 'CI/CD'],
             icon: Terminal,
         }
     };
@@ -392,11 +398,12 @@ export default function ScrollyExperience({ profile, onSummonChange }) {
     const projects = profile?.projects || [
         {
             id: 1,
-            title: 'Sistem Informasi Preskripsi & Farmasi',
-            description: 'Aplikasi manajemen stok obat real-time dan sistem preskripsi pasien terintegrasi dengan validasi transaksi.',
-            tags: ['Laravel', 'PostgreSQL', 'TailwindCSS'],
-            github: '#',
-            demo: '#'
+            title: 'Angry Birds 3D Web Game',
+            description: 'Game 3D ketapel interaktif dengan simulasi fisika trajektori gravitasi (Rapier), peruntuhan struktur balok es/kayu/batu, dan WebGL Three.js.',
+            tags: ['Three.js', 'React Three Fiber', 'Rapier Physics', 'Zustand'],
+            github: 'https://github.com/acannnz/angry_bird',
+            demo: 'https://burungngamuk.arcand.my.id/',
+            image: '/images/angry_birds.webp'
         },
         {
             id: 2,
@@ -955,8 +962,8 @@ export default function ScrollyExperience({ profile, onSummonChange }) {
                                                 <span className="text-cyan-400 uppercase font-bold tracking-wider">
                                                     {meta.serial}
                                                 </span>
-                                                <span className="text-white font-bold bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20">
-                                                    {meta.efficiency}%
+                                                <span className="text-cyan-300 font-bold bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20 text-[8px] uppercase tracking-wider">
+                                                    {meta.status}
                                                 </span>
                                             </div>
 
@@ -985,19 +992,14 @@ export default function ScrollyExperience({ profile, onSummonChange }) {
                                                 ))}
                                             </div>
 
-                                            {/* Segmented Power Bar */}
-                                            <div className="flex items-center gap-0.5 w-full bg-black/50 p-0.5 rounded border border-white/5">
-                                                {Array.from({ length: 8 }).map((_, sIdx) => (
-                                                    <div
-                                                        key={sIdx}
-                                                        className={`h-1 flex-1 rounded-xs ${
-                                                            sIdx < filled
-                                                                ? 'bg-gradient-to-r from-cyan-400 to-purple-500 shadow-[0_0_5px_rgba(6,182,212,0.8)]'
-                                                                 : 'bg-zinc-800'
-                                                         }`}
-                                                     />
-                                                 ))}
-                                             </div>
+                                            {/* Status Indicator */}
+                                            <div className="flex items-center justify-between text-[8px] font-mono text-zinc-400 pt-1 border-t border-white/5">
+                                                <div className="flex items-center gap-1.5 text-cyan-400">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                                                    <span className="tracking-widest">SYSTEM READY</span>
+                                                </div>
+                                                <span className="text-zinc-500 font-bold">PRODUCTION</span>
+                                            </div>
                                         </motion.div>
                                     );
                                 })}
@@ -1038,8 +1040,8 @@ export default function ScrollyExperience({ profile, onSummonChange }) {
                                                 <span className="text-cyan-400 uppercase font-bold tracking-wider">
                                                     {meta.serial}
                                                 </span>
-                                                <span className="text-white font-bold bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20">
-                                                    {meta.efficiency}%
+                                                <span className="text-cyan-300 font-bold bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20 text-[8px] uppercase tracking-wider">
+                                                    {meta.status}
                                                 </span>
                                             </div>
 
@@ -1068,18 +1070,13 @@ export default function ScrollyExperience({ profile, onSummonChange }) {
                                                 ))}
                                             </div>
 
-                                            {/* Segmented Power Bar */}
-                                            <div className="flex items-center gap-0.5 w-full bg-black/50 p-0.5 rounded border border-white/5">
-                                                {Array.from({ length: 8 }).map((_, sIdx) => (
-                                                    <div
-                                                        key={sIdx}
-                                                        className={`h-1 flex-1 rounded-xs ${
-                                                            sIdx < filled
-                                                                ? 'bg-gradient-to-r from-cyan-400 to-purple-500 shadow-[0_0_5px_rgba(6,182,212,0.8)]'
-                                                                : 'bg-zinc-800'
-                                                        }`}
-                                                    />
-                                                ))}
+                                            {/* Status Indicator */}
+                                            <div className="flex items-center justify-between text-[8px] font-mono text-zinc-400 pt-1 border-t border-white/5">
+                                                <div className="flex items-center gap-1.5 text-cyan-400">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                                                    <span className="tracking-widest">SYSTEM READY</span>
+                                                </div>
+                                                <span className="text-zinc-500 font-bold">PRODUCTION</span>
                                             </div>
                                         </motion.div>
                                     );
@@ -1121,17 +1118,15 @@ export default function ScrollyExperience({ profile, onSummonChange }) {
                                             >
                                                 <div className="flex items-center justify-between text-[8px] font-mono text-cyan-400">
                                                     <span>{meta.serial}</span>
-                                                    <span className="text-white font-bold">{meta.efficiency}%</span>
+                                                    <span className="text-cyan-300 font-bold text-[7px] uppercase tracking-wider">{meta.status}</span>
                                                 </div>
                                                 <div className="flex items-center gap-1.5 min-w-0">
                                                     <IconComp className="w-3.5 h-3.5 text-cyan-300 shrink-0" />
                                                     <h4 className="text-[10px] font-bold text-white truncate">{skill.name}</h4>
                                                 </div>
-                                                <div className="h-1 w-full bg-zinc-800 rounded-xs overflow-hidden">
-                                                    <div
-                                                        className="h-full bg-gradient-to-r from-cyan-400 to-purple-500"
-                                                        style={{ width: `${meta.efficiency}%` }}
-                                                    />
+                                                <div className="flex items-center gap-1 text-[7px] font-mono text-cyan-400/80 pt-0.5">
+                                                    <span className="w-1 h-1 rounded-full bg-cyan-400 animate-pulse" />
+                                                    <span>PRODUCTION READY</span>
                                                 </div>
                                             </div>
                                         );
@@ -1219,7 +1214,12 @@ export default function ScrollyExperience({ profile, onSummonChange }) {
                                                     ACTIVE
                                                 </span>
                                             </div>
-
+                                            {proj.image && (
+                                                <div className="relative h-20 w-full rounded-lg overflow-hidden border border-pink-500/20 mb-1">
+                                                    <img src={proj.image} alt={proj.title} className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300" />
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent" />
+                                                </div>
+                                            )}
                                             <h3 className="text-sm sm:text-base font-bold text-white group-hover:text-pink-300 transition-colors">
                                                 {proj.title}
                                             </h3>
