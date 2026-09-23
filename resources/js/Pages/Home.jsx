@@ -64,19 +64,42 @@ export default function Home({ profile }) {
                             className="glass-card rounded-2xl p-6 sm:p-8 border border-white/10 relative overflow-hidden"
                         >
                             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-cyan-400 to-purple-500 rounded-full" />
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                                 <div>
-                                    <h3 className="text-lg font-bold text-white">Fullstack Developer</h3>
+                                    <h3 className="text-lg font-bold text-white">Full Stack Developer</h3>
                                     <p className="text-xs text-purple-400 font-mono">PT Sanata System</p>
                                 </div>
                                 <span className="text-xs font-mono px-3 py-1 rounded bg-cyan-950/50 text-cyan-400 border border-cyan-800/50 self-start flex items-center gap-1.5">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                    Agustus 2025 — Sekarang
+                                    2025 — Present
                                 </span>
                             </div>
-                            <p className="text-sm text-zinc-400 leading-relaxed">
-                                Mengembangkan dan memelihara aplikasi web full-stack, merancang arsitektur backend dengan Laravel serta membangun antarmuka pengguna interaktif menggunakan React dan TailwindCSS.
-                            </p>
+                            <ul className="space-y-2 text-sm text-zinc-400 leading-relaxed list-none">
+                                <li className="flex gap-2">
+                                    <span className="text-cyan-500 mt-1 shrink-0">▹</span>
+                                    <span>Developed, maintained, and scaled web-based healthcare applications utilized by hundreds of clinics and medical professionals.</span>
+                                </li>
+                                <li className="flex gap-2">
+                                    <span className="text-cyan-500 mt-1 shrink-0">▹</span>
+                                    <span>Built and customized end-to-end modules, including patient registration, outpatient services, pharmacy, cashier systems, and analytical reporting dashboards.</span>
+                                </li>
+                                <li className="flex gap-2">
+                                    <span className="text-cyan-500 mt-1 shrink-0">▹</span>
+                                    <span>Integrated frontend interfaces with backend services and optimized SQL Server/Database queries for faster data processing.</span>
+                                </li>
+                                <li className="flex gap-2">
+                                    <span className="text-cyan-500 mt-1 shrink-0">▹</span>
+                                    <span>Implemented responsive layouts and user-centric workflows based on complex client requirements.</span>
+                                </li>
+                                <li className="flex gap-2">
+                                    <span className="text-cyan-500 mt-1 shrink-0">▹</span>
+                                    <span>Collaborated directly with stakeholders and clients to gather requirements, perform training, and improve overall application usability.</span>
+                                </li>
+                                <li className="flex gap-2">
+                                    <span className="text-cyan-500 mt-1 shrink-0">▹</span>
+                                    <span>Currently developing an Accreditation Management System leveraging modern web technologies such as Node.js and React.js to enhance system scalability.</span>
+                                </li>
+                            </ul>
                         </motion.div>
 
                         {/* Internship */}
@@ -88,18 +111,30 @@ export default function Home({ profile }) {
                             className="glass-card rounded-2xl p-6 sm:p-8 border border-white/10 relative overflow-hidden"
                         >
                             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-zinc-600 to-zinc-800 rounded-full" />
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                                 <div>
-                                    <h3 className="text-lg font-bold text-white">Fullstack Developer — Magang</h3>
+                                    <h3 className="text-lg font-bold text-white">Full Stack Web Developer — Internship</h3>
                                     <p className="text-xs text-purple-400 font-mono">Dinas Kominfo Kabupaten Jembrana</p>
+                                    <p className="text-[10px] text-zinc-500 font-mono mt-0.5">Infrastructure and Application Division</p>
                                 </div>
                                 <span className="text-xs font-mono px-3 py-1 rounded bg-zinc-900 text-zinc-400 border border-zinc-800 self-start">
-                                    Februari 2024 — Mei 2024
+                                    2024
                                 </span>
                             </div>
-                            <p className="text-sm text-zinc-400 leading-relaxed">
-                                Membangun dan mengembangkan sistem informasi internal berbasis web untuk kebutuhan operasional dinas, meliputi pengembangan fitur backend dan frontend secara end-to-end selama program magang kuliah.
-                            </p>
+                            <ul className="space-y-2 text-sm text-zinc-400 leading-relaxed list-none">
+                                <li className="flex gap-2">
+                                    <span className="text-cyan-500 mt-1 shrink-0">▹</span>
+                                    <span>Developed a web-based application for recording and monitoring government employee activities to improve internal operational efficiency.</span>
+                                </li>
+                                <li className="flex gap-2">
+                                    <span className="text-cyan-500 mt-1 shrink-0">▹</span>
+                                    <span>Designed and built user interfaces and core system features using Laravel for government internal operations.</span>
+                                </li>
+                                <li className="flex gap-2">
+                                    <span className="text-cyan-500 mt-1 shrink-0">▹</span>
+                                    <span>Participated in the full software development life cycle (SDLC), covering application development, testing, and on-site deployment.</span>
+                                </li>
+                            </ul>
                         </motion.div>
                     </div>
                 </section>
