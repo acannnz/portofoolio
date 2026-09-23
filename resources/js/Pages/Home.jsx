@@ -55,20 +55,52 @@ export default function Home({ profile }) {
                     </motion.div>
 
                     <div className="space-y-6">
-                        <div className="glass-card rounded-2xl p-6 sm:p-8 border border-white/10">
+                        {/* Current Job */}
+                        <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.5 }}
+                            className="glass-card rounded-2xl p-6 sm:p-8 border border-white/10 relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-cyan-400 to-purple-500 rounded-full" />
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                                 <div>
-                                    <h3 className="text-lg font-bold text-white">Fullstack Engineer & Web Specialist</h3>
-                                    <p className="text-xs text-purple-400 font-mono">Independent Consultant • Remote</p>
+                                    <h3 className="text-lg font-bold text-white">Fullstack Developer</h3>
+                                    <p className="text-xs text-purple-400 font-mono">PT Sanata System</p>
                                 </div>
-                                <span className="text-xs font-mono px-3 py-1 rounded bg-zinc-900 text-zinc-400 border border-zinc-800 self-start">
-                                    2022 — Present
+                                <span className="text-xs font-mono px-3 py-1 rounded bg-cyan-950/50 text-cyan-400 border border-cyan-800/50 self-start flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                    Agustus 2025 — Sekarang
                                 </span>
                             </div>
                             <p className="text-sm text-zinc-400 leading-relaxed">
-                                Merancang arsitektur backend berskala tinggi dengan Laravel & database relational, serta mengembangkan frontend interaktif 60fps dengan React, Inertia, dan TailwindCSS.
+                                Mengembangkan dan memelihara aplikasi web full-stack, merancang arsitektur backend dengan Laravel serta membangun antarmuka pengguna interaktif menggunakan React dan TailwindCSS.
                             </p>
-                        </div>
+                        </motion.div>
+
+                        {/* Internship */}
+                        <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.5, delay: 0.15 }}
+                            className="glass-card rounded-2xl p-6 sm:p-8 border border-white/10 relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-zinc-600 to-zinc-800 rounded-full" />
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                                <div>
+                                    <h3 className="text-lg font-bold text-white">Fullstack Developer — Magang</h3>
+                                    <p className="text-xs text-purple-400 font-mono">Dinas Kominfo Kabupaten Jembrana</p>
+                                </div>
+                                <span className="text-xs font-mono px-3 py-1 rounded bg-zinc-900 text-zinc-400 border border-zinc-800 self-start">
+                                    Februari 2024 — Mei 2024
+                                </span>
+                            </div>
+                            <p className="text-sm text-zinc-400 leading-relaxed">
+                                Membangun dan mengembangkan sistem informasi internal berbasis web untuk kebutuhan operasional dinas, meliputi pengembangan fitur backend dan frontend secara end-to-end selama program magang kuliah.
+                            </p>
+                        </motion.div>
                     </div>
                 </section>
 
