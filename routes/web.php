@@ -22,6 +22,16 @@ Route::get('/', function () {
             ],
             'projects' => [
                 [
+                    'id' => 4,
+                    'title' => 'Tokosendiri — Multi-Tenant SaaS E-Commerce',
+                    'description' => 'Platform SaaS satu aplikasi banyak toko: katalog, pesanan, pelanggan, analitik, langganan berbasis kuota, pembayaran Midtrans (Snap/QRIS), dan storefront publik per tenant.',
+                    'tags' => ['Laravel 13', 'PostgreSQL Multi-Tenant', 'React + TypeScript', 'Sanctum', 'Midtrans Snap'],
+                    'github' => null,
+                    'demo' => null,
+                    'image' => '/images/saas_products.webp',
+                    'featured' => true
+                ],
+                [
                     'id' => 1,
                     'title' => 'Angry Birds 3D Web Game',
                     'description' => 'Game 3D ketapel interaktif dengan simulasi fisika trajektori gravitasi (Rapier), peruntuhan struktur balok es/kayu/batu, dan WebGL Three.js.',

@@ -1241,22 +1241,28 @@ export default function ScrollyExperience({ profile, onSummonChange }) {
                                                 ))}
                                             </div>
 
-                                            <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                                                <a
-                                                    href={proj.demo}
-                                                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-pink-400 hover:text-pink-300 transition-colors"
-                                                >
-                                                    <span>Buka Modul</span>
-                                                    <ExternalLink className="w-3.5 h-3.5" />
-                                                </a>
-                                                <a
-                                                    href={proj.github}
-                                                    className="text-zinc-500 hover:text-white transition-colors"
-                                                    title="GitHub Repo"
-                                                >
-                                                    <GitBranch className="w-4 h-4" />
-                                                </a>
-                                            </div>
+                                            {(proj.demo || proj.github) && (
+                                                <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                                                    {proj.demo && (
+                                                        <a
+                                                            href={proj.demo}
+                                                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-pink-400 hover:text-pink-300 transition-colors"
+                                                        >
+                                                            <span>Buka Modul</span>
+                                                            <ExternalLink className="w-3.5 h-3.5" />
+                                                        </a>
+                                                    )}
+                                                    {proj.github && (
+                                                        <a
+                                                            href={proj.github}
+                                                            className="text-zinc-500 hover:text-white transition-colors"
+                                                            title="GitHub Repo"
+                                                        >
+                                                            <GitBranch className="w-4 h-4" />
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </motion.div>
                                 ))}
@@ -1265,7 +1271,7 @@ export default function ScrollyExperience({ profile, onSummonChange }) {
                             {/* Right Column: Floating Armor Shard #3 & Project Matrix Telemetry */}
                             {/* Right Column: Floating Armor Shard #3 & Project Matrix Telemetry (Desktop Only) */}
                             <div className="hidden md:flex absolute inset-y-0 right-3 sm:right-6 lg:right-12 z-30 flex-col justify-center gap-3.5 max-w-xs sm:max-w-sm w-full pointer-events-auto">
-                                {projects.slice(2, 3).map((proj) => (
+                                {projects.slice(2, 4).map((proj) => (
                                     <motion.div
                                         key={proj.id}
                                         initial={{ opacity: 0, x: 30 }}
@@ -1311,22 +1317,28 @@ export default function ScrollyExperience({ profile, onSummonChange }) {
                                                 ))}
                                             </div>
 
-                                            <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                                                <a
-                                                    href={proj.demo}
-                                                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-pink-400 hover:text-pink-300 transition-colors"
-                                                >
-                                                    <span>Buka Modul</span>
-                                                    <ExternalLink className="w-3.5 h-3.5" />
-                                                </a>
-                                                <a
-                                                    href={proj.github}
-                                                    className="text-zinc-500 hover:text-white transition-colors"
-                                                    title="GitHub Repo"
-                                                >
-                                                    <GitBranch className="w-4 h-4" />
-                                                </a>
-                                            </div>
+                                            {(proj.demo || proj.github) && (
+                                                <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                                                    {proj.demo && (
+                                                        <a
+                                                            href={proj.demo}
+                                                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-pink-400 hover:text-pink-300 transition-colors"
+                                                        >
+                                                            <span>Buka Modul</span>
+                                                            <ExternalLink className="w-3.5 h-3.5" />
+                                                        </a>
+                                                    )}
+                                                    {proj.github && (
+                                                        <a
+                                                            href={proj.github}
+                                                            className="text-zinc-500 hover:text-white transition-colors"
+                                                            title="GitHub Repo"
+                                                        >
+                                                            <GitBranch className="w-4 h-4" />
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </motion.div>
                                 ))}
@@ -1383,18 +1395,29 @@ export default function ScrollyExperience({ profile, onSummonChange }) {
                                                         ACTIVE
                                                     </span>
                                                 </div>
+                                                {proj.image && (
+                                                    <div className="relative h-16 w-full rounded-lg overflow-hidden border border-pink-500/20">
+                                                        <img src={proj.image} alt={proj.title} className="w-full h-full object-cover object-center" />
+                                                    </div>
+                                                )}
                                                 <h4 className="text-xs font-bold text-white truncate">{proj.title}</h4>
                                                 <p className="text-[10px] text-zinc-400 leading-relaxed line-clamp-2">{proj.description}</p>
                                             </div>
-                                            <div className="pt-2 flex items-center justify-between border-t border-white/5">
-                                                <a href={proj.demo} className="text-[10px] font-semibold text-pink-400 flex items-center gap-1">
-                                                    <span>Buka Modul</span>
-                                                    <ExternalLink className="w-3 h-3" />
-                                                </a>
-                                                <a href={proj.github} className="text-zinc-500 hover:text-white">
-                                                    <GitBranch className="w-3.5 h-3.5" />
-                                                </a>
-                                            </div>
+                                            {(proj.demo || proj.github) && (
+                                                <div className="pt-2 flex items-center justify-between border-t border-white/5">
+                                                    {proj.demo && (
+                                                        <a href={proj.demo} className="text-[10px] font-semibold text-pink-400 flex items-center gap-1">
+                                                            <span>Buka Modul</span>
+                                                            <ExternalLink className="w-3 h-3" />
+                                                        </a>
+                                                    )}
+                                                    {proj.github && (
+                                                        <a href={proj.github} className="text-zinc-500 hover:text-white">
+                                                            <GitBranch className="w-3.5 h-3.5" />
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
