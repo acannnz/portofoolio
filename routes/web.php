@@ -26,8 +26,8 @@ Route::get('/', function () {
                     'title' => 'Tokosendiri — Multi-Tenant SaaS E-Commerce',
                     'description' => 'Platform SaaS satu aplikasi banyak toko: katalog, pesanan, pelanggan, analitik, langganan berbasis kuota, pembayaran Midtrans (Snap/QRIS), dan storefront publik per tenant.',
                     'tags' => ['Laravel 13', 'PostgreSQL Multi-Tenant', 'React + TypeScript', 'Sanctum', 'Midtrans Snap'],
-                    'github' => null,
-                    'demo' => null,
+                    'github' => 'https://github.com/acannnz/Saas-landingpage',
+                    'demo' => 'https://tokosendiri.my.id/',
                     'image' => '/images/saas_products.webp',
                     'featured' => true
                 ],
