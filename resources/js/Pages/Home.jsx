@@ -1,180 +1,41 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Head } from '@inertiajs/react';
-import { motion } from 'framer-motion';
-import ScrollyExperience from '../Components/ScrollyExperience';
+import { MotionConfig } from 'framer-motion';
 import ParticleNetworkBackground from '../Components/ParticleNetworkBackground';
-import { 
-    Mail, 
-    Code2, 
-    Layers
-} from 'lucide-react';
+import ScrollyExperience from '../Components/ScrollyExperience';
+import ContactSection from '../Components/Sections/ContactSection';
+import ExperienceSection from '../Components/Sections/ExperienceSection';
 
 export default function Home({ profile }) {
-    const [isSummoned, setIsSummoned] = useState(false);
-
-    // Native scroll to top
     useEffect(() => {
         window.scrollTo(0, 0);
     }, []);
 
     return (
-        <div className="min-h-screen bg-[#050505] text-zinc-100 selection:bg-purple-500/20 selection:text-purple-300 relative select-none">
-            <Head title="Candra - Mecha Portfolio Experience" />
+        // reducedMotion="user": framer-motion skips transform animations for prefers-reduced-motion
+        <MotionConfig reducedMotion="user">
+            <div className="min-h-screen bg-[#050505] text-zinc-100 selection:bg-purple-500/20 selection:text-purple-300 relative">
+                <Head title={`${profile.name} — ${profile.role}`} />
 
-            {/* Moving Particle Network Background */}
-            <ParticleNetworkBackground />
+                <ParticleNetworkBackground />
 
-            {/* Ambient Background Glows Container - fixed to viewport so it never causes horizontal scroll */}
-            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-                <div className="ambient-glow w-[500px] h-[500px] bg-purple-900/15 -top-40 -left-40" />
-                <div className="ambient-glow w-[600px] h-[600px] bg-cyan-900/10 top-1/3 -right-40" />
-                <div className="ambient-glow w-[500px] h-[500px] bg-indigo-900/15 bottom-10 left-1/4" />
-            </div>
-            {/* HERO SCROLLYEXPERIENCE CONTAINER */}
-            <main>
-                <ScrollyExperience profile={profile} onSummonChange={setIsSummoned} />
+                {/* Ambient glows: fixed to the viewport so they never cause horizontal scroll */}
+                <div aria-hidden="true" className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+                    <div className="ambient-glow w-[500px] h-[500px] bg-purple-900/15 -top-40 -left-40" />
+                    <div className="ambient-glow w-[600px] h-[600px] bg-cyan-900/10 top-1/3 -right-40" />
+                    <div className="ambient-glow w-[500px] h-[500px] bg-indigo-900/15 bottom-10 left-1/4" />
+                </div>
 
-                {/* Additional Sections below motion experience (Muncul setelah summon) */}
-                {isSummoned && (
-                    <>
-                {/* Experience / Milestones Section */}
-                <section id="experience" className="py-24 px-6 max-w-5xl mx-auto relative z-20">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.6 }}
-                        className="space-y-3 mb-14 text-center sm:text-left"
-                    >
-                        <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-cyan-400">
-                            <Code2 className="w-3.5 h-3.5" /> Track Record
-                        </div>
-                        <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-white">
-                            Experience & Trajectory
-                        </h2>
-                    </motion.div>
+                <main>
+                    <ScrollyExperience profile={profile} />
+                    <ExperienceSection experience={profile.experience} />
+                    <ContactSection email={profile.email} />
+                </main>
 
-                    <div className="space-y-6">
-                        {/* Current Job */}
-                        <motion.div
-                            initial={{ opacity: 0, x: -20 }}
-                            whileInView={{ opacity: 1, x: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.5 }}
-                            className="glass-card rounded-2xl p-6 sm:p-8 border border-white/10 relative overflow-hidden"
-                        >
-                            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-cyan-400 to-purple-500 rounded-full" />
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-                                <div>
-                                    <h3 className="text-lg font-bold text-white">Full Stack Developer</h3>
-                                    <p className="text-xs text-purple-400 font-mono">PT Sanata System</p>
-                                </div>
-                                <span className="text-xs font-mono px-3 py-1 rounded bg-cyan-950/50 text-cyan-400 border border-cyan-800/50 self-start flex items-center gap-1.5">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                    2025 — Present
-                                </span>
-                            </div>
-                            <ul className="space-y-2 text-sm text-zinc-400 leading-relaxed list-none">
-                                <li className="flex gap-2">
-                                    <span className="text-cyan-500 mt-1 shrink-0">▹</span>
-                                    <span>Developed, maintained, and scaled web-based healthcare applications utilized by hundreds of clinics and medical professionals.</span>
-                                </li>
-                                <li className="flex gap-2">
-                                    <span className="text-cyan-500 mt-1 shrink-0">▹</span>
-                                    <span>Built and customized end-to-end modules, including patient registration, outpatient services, pharmacy, cashier systems, and analytical reporting dashboards.</span>
-                                </li>
-                                <li className="flex gap-2">
-                                    <span className="text-cyan-500 mt-1 shrink-0">▹</span>
-                                    <span>Integrated frontend interfaces with backend services and optimized SQL Server/Database queries for faster data processing.</span>
-                                </li>
-                                <li className="flex gap-2">
-                                    <span className="text-cyan-500 mt-1 shrink-0">▹</span>
-                                    <span>Implemented responsive layouts and user-centric workflows based on complex client requirements.</span>
-                                </li>
-                                <li className="flex gap-2">
-                                    <span className="text-cyan-500 mt-1 shrink-0">▹</span>
-                                    <span>Collaborated directly with stakeholders and clients to gather requirements, perform training, and improve overall application usability.</span>
-                                </li>
-                                <li className="flex gap-2">
-                                    <span className="text-cyan-500 mt-1 shrink-0">▹</span>
-                                    <span>Currently developing an Accreditation Management System leveraging modern web technologies such as Node.js and React.js to enhance system scalability.</span>
-                                </li>
-                            </ul>
-                        </motion.div>
-
-                        {/* Internship */}
-                        <motion.div
-                            initial={{ opacity: 0, x: -20 }}
-                            whileInView={{ opacity: 1, x: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.5, delay: 0.15 }}
-                            className="glass-card rounded-2xl p-6 sm:p-8 border border-white/10 relative overflow-hidden"
-                        >
-                            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-zinc-600 to-zinc-800 rounded-full" />
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-                                <div>
-                                    <h3 className="text-lg font-bold text-white">Full Stack Web Developer — Internship</h3>
-                                    <p className="text-xs text-purple-400 font-mono">Dinas Kominfo Kabupaten Jembrana</p>
-                                    <p className="text-[10px] text-zinc-500 font-mono mt-0.5">Infrastructure and Application Division</p>
-                                </div>
-                                <span className="text-xs font-mono px-3 py-1 rounded bg-zinc-900 text-zinc-400 border border-zinc-800 self-start">
-                                    2024
-                                </span>
-                            </div>
-                            <ul className="space-y-2 text-sm text-zinc-400 leading-relaxed list-none">
-                                <li className="flex gap-2">
-                                    <span className="text-cyan-500 mt-1 shrink-0">▹</span>
-                                    <span>Developed a web-based application for recording and monitoring government employee activities to improve internal operational efficiency.</span>
-                                </li>
-                                <li className="flex gap-2">
-                                    <span className="text-cyan-500 mt-1 shrink-0">▹</span>
-                                    <span>Designed and built user interfaces and core system features using Laravel for government internal operations.</span>
-                                </li>
-                                <li className="flex gap-2">
-                                    <span className="text-cyan-500 mt-1 shrink-0">▹</span>
-                                    <span>Participated in the full software development life cycle (SDLC), covering application development, testing, and on-site deployment.</span>
-                                </li>
-                            </ul>
-                        </motion.div>
-                    </div>
-                </section>
-
-                {/* Contact Section */}
-                <section id="contact" className="py-24 px-6 max-w-4xl mx-auto text-center relative z-20">
-                    <motion.div
-                        initial={{ opacity: 0, y: 30 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.6 }}
-                        className="glass-card rounded-3xl p-10 sm:p-14 space-y-8 border border-white/10 relative overflow-hidden"
-                    >
-                        <div className="ambient-glow w-60 h-60 bg-purple-600/20 -top-20 -right-20 pointer-events-none" />
-                        
-                        <h2 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">
-                            Ready to Collaborate?
-                        </h2>
-                        <p className="text-zinc-400 max-w-lg mx-auto text-base">
-                            Berminat membangun produk digital berstandar tinggi atau mengintegrasikan pengalaman interaktif pada platform Anda?
-                        </p>
-
-                        <div className="flex justify-center gap-4 pt-2">
-                            <a 
-                                href="mailto:candra@example.com" 
-                                className="px-8 py-4 rounded-full bg-white text-zinc-950 font-semibold text-sm hover:bg-zinc-200 transition-all flex items-center gap-2 shadow-lg"
-                            >
-                                <Mail className="w-4 h-4" /> Send Email
-                            </a>
-                        </div>
-                    </motion.div>
-                </section>
-
-                {/* Footer */}
                 <footer className="py-8 border-t border-zinc-900 text-center text-xs text-zinc-600 relative z-20">
-                    © {new Date().getFullYear()} I PUTU GEDE CANDRA PRATAMA. Built with Laravel, Inertia, React & Framer Motion.
+                    © {new Date().getFullYear()} {profile.name}. Built with Laravel, Inertia, React &amp; Framer Motion.
                 </footer>
-                </>
-                )}
-            </main>
-        </div>
+            </div>
+        </MotionConfig>
     );
 }

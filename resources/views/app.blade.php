@@ -3,7 +3,16 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Portfolio - Modern & Minimalist</title>
+    <title inertia>{{ config('app.name') }}</title>
+    <meta name="description" content="{{ config('portfolio.name') }} — {{ config('portfolio.role') }}. {{ config('portfolio.about') }}">
+    <meta name="theme-color" content="#050505">
+
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{{ config('portfolio.name') }} — {{ config('portfolio.role') }}">
+    <meta property="og:description" content="{{ config('portfolio.about') }}">
+    <meta property="og:image" content="{{ url(config('portfolio.avatar')) }}">
+    <meta property="og:url" content="{{ url('/') }}">
+    <meta name="twitter:card" content="summary">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
