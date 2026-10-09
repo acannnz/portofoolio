@@ -3,14 +3,30 @@ import { Head } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import ScrollyExperience from '../Components/ScrollyExperience';
 import ParticleNetworkBackground from '../Components/ParticleNetworkBackground';
-import { 
-    Mail, 
-    Code2, 
-    Layers
+import {
+    Mail,
+    Code2,
+    Layers,
+    GitBranch,
+    Copy,
+    Check
 } from 'lucide-react';
 
 export default function Home({ profile }) {
     const [isSummoned, setIsSummoned] = useState(false);
+    const [emailCopied, setEmailCopied] = useState(false);
+    const contact = profile?.contact ?? {};
+
+    // Fallback for visitors without a configured mail client
+    const copyEmail = async () => {
+        try {
+            await navigator.clipboard.writeText(contact.email);
+            setEmailCopied(true);
+            setTimeout(() => setEmailCopied(false), 2000);
+        } catch {
+            window.location.href = `mailto:${contact.email}`;
+        }
+    };
 
     // Native scroll to top
     useEffect(() => {
@@ -157,14 +173,40 @@ export default function Home({ profile }) {
                             Berminat membangun produk digital berstandar tinggi atau mengintegrasikan pengalaman interaktif pada platform Anda?
                         </p>
 
-                        <div className="flex justify-center gap-4 pt-2">
-                            <a 
-                                href="mailto:candra@example.com" 
-                                className="px-8 py-4 rounded-full bg-white text-zinc-950 font-semibold text-sm hover:bg-zinc-200 transition-all flex items-center gap-2 shadow-lg"
-                            >
-                                <Mail className="w-4 h-4" /> Send Email
-                            </a>
+                        <div className="flex flex-col sm:flex-row justify-center items-center gap-4 pt-2">
+                            {contact.email && (
+                                <a
+                                    href={`mailto:${contact.email}`}
+                                    className="px-8 py-4 rounded-full bg-white text-zinc-950 font-semibold text-sm hover:bg-zinc-200 transition-all flex items-center gap-2 shadow-lg"
+                                >
+                                    <Mail className="w-4 h-4" /> Send Email
+                                </a>
+                            )}
+                            {contact.github && (
+                                <a
+                                    href={contact.github}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="px-8 py-4 rounded-full border border-white/15 bg-white/5 text-white font-semibold text-sm hover:bg-white/10 hover:border-white/30 transition-all flex items-center gap-2"
+                                >
+                                    <GitBranch className="w-4 h-4" /> GitHub
+                                </a>
+                            )}
                         </div>
+
+                        {contact.email && (
+                            <button
+                                type="button"
+                                onClick={copyEmail}
+                                className="inline-flex items-center gap-2 text-xs font-mono text-zinc-500 hover:text-zinc-300 transition-colors select-text"
+                                title="Copy email"
+                            >
+                                {contact.email}
+                                {emailCopied
+                                    ? <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                    : <Copy className="w-3.5 h-3.5" />}
+                            </button>
+                        )}
                     </motion.div>
                 </section>
 

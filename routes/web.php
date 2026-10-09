@@ -12,6 +12,10 @@ Route::get('/', function () {
             'location' => 'Jembrana, Bali',
             'avatar' => '/images/profile.webp',
             'about' => 'Software Engineer berpengalaman dalam merancang & membangun aplikasi web modern yang cepat, skalabel, serta berantarmuka intuitif.',
+            'contact' => [
+                'email' => 'putu.candra689@gmail.com',
+                'github' => 'https://github.com/acannnz',
+            ],
             'skills' => [
                 ['name' => 'Laravel, PHP, Golang', 'category' => 'Backend'],
                 ['name' => 'React & Next.js', 'category' => 'Frontend'],
