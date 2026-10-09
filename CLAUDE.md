@@ -62,3 +62,9 @@ Boost replaces these bootstrap instructions with guidelines tailored to the appl
 
 ### 4. Background Gradient Contrast
 - **Rule**: Avoid heavy bottom overlays (`bg-gradient-to-t from-[#030307]`) on full-body canvas views; use subtle directional vignettes (`from-black/40 via-transparent`).
+
+## Workflow Rules
+
+### Auto Commit & Push
+- **Rule**: After every change, commit it and push it to the working branch right away, without waiting to be asked.
+- **Before pushing**: Run the quick checks first (`php -l` for edited PHP files, `npm run build` for frontend changes). Do not push a broken build.
