@@ -66,5 +66,5 @@ Boost replaces these bootstrap instructions with guidelines tailored to the appl
 ## Workflow Rules
 
 ### Auto Commit & Push
-- **Rule**: After every change, commit it and push it to the working branch right away, without waiting to be asked.
+- **Rule**: After every change, commit it and push it directly to `main` right away, without waiting to be asked (owner-approved; no PR needed).
 - **Before pushing**: Run the quick checks first (`php -l` for edited PHP files, `npm run build` for frontend changes). Do not push a broken build.
