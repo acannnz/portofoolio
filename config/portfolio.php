@@ -93,8 +93,67 @@ return [
             'github' => null,
             'demo' => null,
             'image' => null,
-            // Client system, so no screenshots: render a live 3D module map instead (see ProjectShard VISUALS)
+            // Client system, so no screenshots: render a live 3D module map instead (see Scrolly/visuals.js)
             'visual' => 'clinic-network',
+            // Projects with a slug + case_study get their own page at /projects/{slug}
+            'slug' => 'sistem-klinik',
+            'case_study' => [
+                'role' => 'Full Stack Developer',
+                'period' => '2025 — Sekarang',
+                'client' => 'Klinik & praktik dokter',
+                'summary' => 'Sistem informasi klinik berbasis web yang dipakai setiap hari oleh klinik dan praktik dokter, mulai dari pasien mendaftar sampai membayar di kasir. Satu basis kode melayani banyak unit klinik, masing-masing dengan konfigurasi dan database sendiri. Saya mengembangkan dan menyesuaikan modul sesuai kebutuhan tiap klien, serta memperbaiki masalah yang langsung berdampak ke pelayanan pasien.',
+                'stats' => [
+                    ['value' => 'Ratusan', 'label' => 'klinik & tenaga medis pengguna'],
+                    ['value' => '6', 'label' => 'modul yang saya kerjakan'],
+                    ['value' => 'Multi-unit', 'label' => 'satu basis kode, banyak klinik'],
+                    ['value' => 'Real-time', 'label' => 'e-resep dari dokter ke farmasi'],
+                ],
+                'challenges' => [
+                    [
+                        'title' => 'Satu sistem, banyak unit',
+                        'body' => 'Satu basis kode melayani beberapa unit klinik dalam satu instansi sekaligus praktik dokter mandiri, masing-masing dengan konfigurasi dan database sendiri.',
+                    ],
+                    [
+                        'title' => 'Alur klinis tidak boleh tersendat',
+                        'body' => 'Registrasi, pemeriksaan, resep, dan kasir berjalan berurutan. Satu form yang macet berarti antrean pasien ikut berhenti.',
+                    ],
+                    [
+                        'title' => 'Kebutuhan tiap klien berbeda',
+                        'body' => 'Field wajib, layanan default, sampai alur pemeriksaan disesuaikan per klien tanpa merusak alur unit lain.',
+                    ],
+                ],
+                'modules' => [
+                    ['code' => 'REG', 'title' => 'Registrasi & antrean', 'body' => 'Pendaftaran pasien dan antrean poli, dengan field wajib yang bisa disederhanakan per klien agar pendaftaran lebih cepat.'],
+                    ['code' => 'POLI', 'title' => 'Rawat jalan & EMR (SOAP)', 'body' => 'Asesmen dokter dan perawat dengan rekam medis SOAP. Riwayat dan tanda vital diteruskan dari registrasi ke modul dokter.'],
+                    ['code' => 'E-RX', 'title' => 'E-resep & farmasi', 'body' => 'Resep elektronik dari dokter ke farmasi, diperbarui secara real-time lewat WebSocket.'],
+                    ['code' => 'KASIR', 'title' => 'Kasir & billing', 'body' => 'Rekap total tagihan tindakan rawat jalan dan komponen tarif layanan sampai pembayaran di kasir.'],
+                    ['code' => 'LOG', 'title' => 'Logistik & stock opname', 'body' => 'Pengadaan, penerimaan, distribusi antar-unit, pemakaian barang, dan stock opname dengan alur Draft lalu Posting.'],
+                    ['code' => 'RPT', 'title' => 'Laporan & dashboard', 'body' => 'Laporan nilai persediaan dengan kartu KPI, rincian per kategori, cetak, dan export Excel.'],
+                ],
+                'highlights' => [
+                    [
+                        'title' => 'Form e-resep yang macet',
+                        'problem' => 'Setelah resep disimpan, form kadang tidak menutup dan loading berputar terus.',
+                        'solution' => 'Notifikasi WebSocket dikirim tanpa memastikan koneksi terbuka, sehingga memicu error JavaScript sebelum modal ditutup. Saya tambahkan pengecekan status koneksi dan penanganan error, lalu memastikan modal dan loader selalu dibersihkan.',
+                    ],
+                    [
+                        'title' => 'Stock opname yang bisa diaudit',
+                        'problem' => 'Selisih stok fisik dan sistem harus tercatat tanpa langsung mengubah stok saat masih dihitung.',
+                        'solution' => 'Alur Draft lalu Posting dengan penomoran YYMM-OPNLOG-XXXXXX. Saat posting, stok disinkronkan dan selisihnya dicatat ke kartu gudang.',
+                    ],
+                    [
+                        'title' => 'Layanan default yang muncul lagi',
+                        'problem' => 'Layanan default seperti konsultasi dokter umum muncul kembali di tagihan meski sudah dihapus petugas.',
+                        'solution' => 'Layanan default kini hanya diisi otomatis di tampilan untuk pemeriksaan baru. Backend tidak lagi menyisipkannya paksa saat data disimpan atau diubah.',
+                    ],
+                    [
+                        'title' => 'Error tarif dari SQL Server',
+                        'problem' => 'Pengambilan komponen tarif layanan gagal dengan error SQL ketika daftar harga pasien kosong.',
+                        'solution' => 'Query diubah memakai parameter terikat dan validasi fallback daftar harga, sehingga function SQL Server selalu menerima argumen yang valid.',
+                    ],
+                ],
+                'stack' => ['PHP', 'CodeIgniter 3 HMVC', 'SQL Server', 'jQuery', 'WebSocket', 'Bootstrap'],
+            ],
         ],
         [
             'id' => 1,

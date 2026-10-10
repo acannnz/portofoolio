@@ -61,11 +61,11 @@ function makeProjector(width, height, yaw) {
     };
 }
 
-function drawFrame(ctx, width, height, time) {
+function drawFrame(ctx, width, height, time, yawOffset = 0) {
     // Hidden (e.g. the mobile deck on desktop is display:none): nothing to draw, and the scale would go negative
     if (width < 40 || height < 40) return;
 
-    const project = makeProjector(width, height, time * SPIN);
+    const project = makeProjector(width, height, time * SPIN + yawOffset);
     const showLabels = height >= 100;
     const fade = (depth) => 1 - Math.min(1, Math.max(0, depth)) * 0.65;
 
@@ -227,7 +227,8 @@ function drawFrame(ctx, width, height, time) {
     }
 }
 
-export default function ClinicNetworkVisual() {
+/** interactive: drag horizontally to spin the model (used on the large case study view). */
+export default function ClinicNetworkVisual({ interactive = false }) {
     const canvasRef = useRef(null);
     const reduceMotion = useReducedMotion();
 
@@ -238,21 +239,25 @@ export default function ClinicNetworkVisual() {
         let height = 0;
         let rafId = 0;
         let visible = false;
+        let yawOffset = 0;
+        let drag = null;
         const start = performance.now();
+        const clock = () => (reduceMotion ? 1.2 : (performance.now() - start) / 1000);
+        const render = () => drawFrame(ctx, width, height, clock(), yawOffset);
 
         const resize = () => {
-            const rect = canvas.getBoundingClientRect();
+            // Layout size, not getBoundingClientRect: parents scale/rotate in 3D and would shrink the backing store
             const dpr = Math.min(window.devicePixelRatio || 1, 2);
-            width = rect.width;
-            height = rect.height;
+            width = canvas.clientWidth;
+            height = canvas.clientHeight;
             canvas.width = Math.round(width * dpr);
             canvas.height = Math.round(height * dpr);
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            drawFrame(ctx, width, height, reduceMotion ? 1.2 : (performance.now() - start) / 1000);
+            render();
         };
 
-        const loop = (now) => {
-            drawFrame(ctx, width, height, (now - start) / 1000);
+        const loop = () => {
+            render();
             rafId = requestAnimationFrame(loop);
         };
 
@@ -271,12 +276,41 @@ export default function ClinicNetworkVisual() {
         });
         visibilityObserver.observe(canvas);
 
+        const onPointerDown = (e) => {
+            drag = { x: e.clientX, offset: yawOffset };
+            canvas.setPointerCapture(e.pointerId);
+        };
+        const onPointerMove = (e) => {
+            if (!drag) return;
+            yawOffset = drag.offset + (e.clientX - drag.x) * 0.012;
+            if (reduceMotion || !visible) render(); // no animation loop to pick it up
+        };
+        const onPointerUp = () => {
+            drag = null;
+        };
+        if (interactive) {
+            canvas.addEventListener('pointerdown', onPointerDown);
+            canvas.addEventListener('pointermove', onPointerMove);
+            canvas.addEventListener('pointerup', onPointerUp);
+            canvas.addEventListener('pointercancel', onPointerUp);
+        }
+
         return () => {
             cancelAnimationFrame(rafId);
             resizeObserver.disconnect();
             visibilityObserver.disconnect();
+            canvas.removeEventListener('pointerdown', onPointerDown);
+            canvas.removeEventListener('pointermove', onPointerMove);
+            canvas.removeEventListener('pointerup', onPointerUp);
+            canvas.removeEventListener('pointercancel', onPointerUp);
         };
-    }, [reduceMotion]);
+    }, [interactive, reduceMotion]);
 
-    return <canvas ref={canvasRef} aria-hidden="true" className="absolute inset-0 w-full h-full" />;
+    return (
+        <canvas
+            ref={canvasRef}
+            aria-hidden="true"
+            className={`absolute inset-0 w-full h-full ${interactive ? 'cursor-grab active:cursor-grabbing touch-pan-y' : ''}`}
+        />
+    );
 }

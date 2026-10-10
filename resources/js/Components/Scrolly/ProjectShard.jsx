@@ -1,16 +1,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ExternalLink, GitBranch, Lock, Orbit, ScanLine } from 'lucide-react';
-import ClinicNetworkVisual from './ClinicNetworkVisual';
+import { BookOpen, ExternalLink, GitBranch, Lock, Orbit, ScanLine } from 'lucide-react';
 import HoloCard from './HoloCard';
 import { chamferClip } from './constants';
+import { VISUALS } from './visuals';
 
 export const pad = (n) => String(n).padStart(2, '0');
 
-// Live visuals for projects that can't show screenshots (keyed by 'visual' in config/portfolio.php)
-const VISUALS = {
-    'clinic-network': ClinicNetworkVisual,
-};
+export const caseStudyUrl = (project) => (project.slug && project.case_study ? `/projects/${project.slug}` : null);
 
 const GRID_BG = {
     backgroundImage:
@@ -80,6 +77,15 @@ function ShardMedia({ project, number, className = '' }) {
 }
 
 function ShardStatus({ project }) {
+    if (!project.demo && caseStudyUrl(project)) {
+        return (
+            <span className="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 border border-cyan-400/30 bg-cyan-500/10 font-mono text-[8px] font-bold tracking-widest text-cyan-300 uppercase">
+                <BookOpen className="w-2.5 h-2.5" aria-hidden="true" />
+                Case study
+            </span>
+        );
+    }
+
     return project.demo ? (
         <span className="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 border border-emerald-400/30 bg-emerald-500/10 font-mono text-[8px] font-bold tracking-widest text-emerald-300 uppercase">
             <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
@@ -110,6 +116,31 @@ function ShardTags({ tags, limit }) {
 
 function ShardLinks({ project, compact = false }) {
     const size = compact ? 'text-[10px] px-2.5 py-1' : 'text-[11px] px-3 py-1.5';
+    const caseStudy = caseStudyUrl(project);
+
+    // Opens in a new tab so the visitor keeps their place in the scroll experience
+    if (caseStudy) {
+        return (
+            <div className="flex items-center gap-3">
+                <a
+                    href={caseStudy}
+                    target="_blank"
+                    rel="noopener"
+                    style={{ clipPath: chamferClip(6) }}
+                    className={`inline-flex items-center gap-1.5 ${size} font-semibold bg-pink-500/20 text-pink-100 hover:bg-pink-500/35 hover:text-white transition-colors`}
+                >
+                    Read case study
+                    <BookOpen className="w-3 h-3" aria-hidden="true" />
+                </a>
+                {!project.github && (
+                    <span className="inline-flex items-center gap-1 font-mono text-[8.5px] text-zinc-500 uppercase tracking-widest">
+                        <Lock className="w-2.5 h-2.5" aria-hidden="true" />
+                        Source private
+                    </span>
+                )}
+            </div>
+        );
+    }
 
     if (!project.demo && !project.github) {
         return (

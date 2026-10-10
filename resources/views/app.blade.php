@@ -3,15 +3,20 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title inertia>{{ config('app.name') }}</title>
-    <meta name="description" content="{{ config('portfolio.name') }} — {{ config('portfolio.role') }}. {{ config('portfolio.about') }}">
+    {{-- Pages can override these via ->withViewData(['meta' => [...]]) so shared links get the right preview --}}
+    @php
+        $metaTitle = $meta['title'] ?? config('portfolio.name') . ' — ' . config('portfolio.role');
+        $metaDescription = $meta['description'] ?? config('portfolio.name') . ' — ' . config('portfolio.role') . '. ' . config('portfolio.about');
+    @endphp
+    <title inertia>{{ $meta['title'] ?? config('app.name') }}</title>
+    <meta name="description" content="{{ $metaDescription }}">
     <meta name="theme-color" content="#050505">
 
     <meta property="og:type" content="website">
-    <meta property="og:title" content="{{ config('portfolio.name') }} — {{ config('portfolio.role') }}">
-    <meta property="og:description" content="{{ config('portfolio.about') }}">
+    <meta property="og:title" content="{{ $metaTitle }}">
+    <meta property="og:description" content="{{ $meta['description'] ?? config('portfolio.about') }}">
     <meta property="og:image" content="{{ url(config('portfolio.avatar')) }}">
-    <meta property="og:url" content="{{ url('/') }}">
+    <meta property="og:url" content="{{ url()->current() }}">
     <meta name="twitter:card" content="summary">
 
     <!-- Fonts -->

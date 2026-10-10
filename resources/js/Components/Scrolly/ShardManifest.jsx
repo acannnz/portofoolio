@@ -1,7 +1,7 @@
 import React from 'react';
-import { Lock } from 'lucide-react';
+import { BookOpen, Lock } from 'lucide-react';
 import HoloCard from './HoloCard';
-import { pad } from './ProjectShard';
+import { caseStudyUrl, pad } from './ProjectShard';
 import { chamferClip } from './constants';
 
 /** Desktop: index of every detached shard (right of the mecha). Selecting one scrolls the scene to it. */
@@ -65,6 +65,8 @@ export default function ShardManifest({ projects, active, progress, onSelect }) 
 
                                 {project.demo ? (
                                     <span title="Live demo" className="w-1.5 h-1.5 shrink-0 rounded-full bg-emerald-400" />
+                                ) : caseStudyUrl(project) ? (
+                                    <BookOpen aria-label="Case study" className="w-3 h-3 shrink-0 text-cyan-400/80" />
                                 ) : (
                                     <Lock aria-label="Private" className="w-3 h-3 shrink-0 text-zinc-600" />
                                 )}
