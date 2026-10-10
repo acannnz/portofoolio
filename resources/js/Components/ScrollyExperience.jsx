@@ -174,6 +174,19 @@ export default function ScrollyExperience({ profile }) {
         return () => window.removeEventListener('scroll', handleScroll);
     }, [isSummoned, syncTargetToScroll]);
 
+    // Scrolls the page so the scene lands on `frame` (inverse of syncTargetToScroll)
+    const seekToFrame = useCallback(
+        (frame) => {
+            const container = containerRef.current;
+            if (!container) return;
+            const scrollable = container.scrollHeight - window.innerHeight;
+            const progress = (frame - FRAME_INTRO_END) / (TOTAL_FRAMES - FRAME_INTRO_END);
+            const top = container.getBoundingClientRect().top + window.scrollY + progress * scrollable;
+            window.scrollTo({ top, behavior: reduceMotion ? 'auto' : 'smooth' });
+        },
+        [reduceMotion],
+    );
+
     // ---- Summon: wait for the intro frames, then auto-play 1 -> INTRO_END ----
     const startIntroDescent = useCallback(() => {
         cancelAnimationFrame(introRafIdRef.current);
@@ -315,7 +328,14 @@ export default function ScrollyExperience({ profile }) {
 
                 {/* Scene 3: armor detachment -> projects */}
                 <AnimatePresence>
-                    {phase === PHASE.PROJECTS && <ProjectsPhase key="projects" projects={profile.projects} />}
+                    {phase === PHASE.PROJECTS && (
+                        <ProjectsPhase
+                            key="projects"
+                            projects={profile.projects}
+                            frame={currentFrame}
+                            onSeekFrame={seekToFrame}
+                        />
+                    )}
                 </AnimatePresence>
             </div>
         </div>

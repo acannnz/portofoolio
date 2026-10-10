@@ -13,6 +13,9 @@ const ELBOW_FRAC = [0.6, 0.4, 0.6];
 // Vertical parallax factor per card row (top, middle, bottom)
 const PARALLAX = [-0.4, -0.1, 0.35];
 
+// Base rotateX per card row, so each column curves around the mecha
+const PITCH = [-6, 0, 6];
+
 function SkillColumn({ skills, side, frame }) {
     const sidePosition = side === 'left' ? 'left-3 sm:left-6 lg:left-12' : 'right-3 sm:right-6 lg:right-12';
 
@@ -24,6 +27,7 @@ function SkillColumn({ skills, side, frame }) {
                     skill={skill}
                     index={idx}
                     side={side}
+                    pitch={PITCH[idx]}
                     leaderId={`skill-${side}-${idx}`}
                     parallaxY={(frame - FRAME_STANDING_CENTER) * PARALLAX[idx]}
                 />

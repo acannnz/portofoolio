@@ -80,7 +80,7 @@ return [
             'tags' => ['Laravel 13', 'PostgreSQL Multi-Tenant', 'React + TypeScript', 'Sanctum', 'Midtrans Snap'],
             'github' => 'https://github.com/acannnz/Saas-landingpage',
             'demo' => 'https://tokosendiri.my.id/',
-            'image' => '/images/saas_products.webp',
+            'image' => '/images/tokosendiri_landing.webp',
         ],
         [
             'id' => 1,

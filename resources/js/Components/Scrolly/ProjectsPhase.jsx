@@ -1,13 +1,21 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ChevronDown, Shield } from 'lucide-react';
-import { MobileProjectCard, ProjectShard } from './ProjectShard';
+import { MobileProjectCard, ShardDetail } from './ProjectShard';
+import ShardManifest from './ShardManifest';
+import { FRAME_STANDING_END, TOTAL_FRAMES, clamp } from './constants';
 
-const COLUMN_CLASSES =
-    'hidden md:flex absolute inset-y-0 z-30 flex-col justify-center gap-2.5 sm:gap-3 max-w-[280px] lg:max-w-[310px] xl:max-w-[330px] w-full pointer-events-auto';
+// Last frames: armor detaches into floating shards, one per project. The frame range is split into
+// one segment per project, so scrolling scans through them; the manifest seeks to a segment.
+export default function ProjectsPhase({ projects, frame, onSeekFrame }) {
+    const count = projects.length;
+    const span = (TOTAL_FRAMES - FRAME_STANDING_END) / Math.max(count, 1);
+    const position = (frame - FRAME_STANDING_END) / span;
+    const active = clamp(Math.floor(position), 0, Math.max(count - 1, 0));
+    const progress = clamp(position - active, 0, 1);
 
-// Last frames: armor detaches into floating shards, one per project.
-export default function ProjectsPhase({ projects }) {
+    const selectShard = (idx) => onSeekFrame(FRAME_STANDING_END + span * (idx + 0.5));
+
     return (
         <motion.div
             key="phase-armor-projects"
@@ -25,17 +33,12 @@ export default function ProjectsPhase({ projects }) {
                 </div>
             </div>
 
-            <div className={`${COLUMN_CLASSES} left-3 sm:left-6 lg:left-10 xl:left-16`}>
-                {projects.slice(0, 2).map((project, idx) => (
-                    <ProjectShard key={project.id} project={project} number={idx + 1} side="left" delay={idx * 0.15} />
-                ))}
-            </div>
-
-            <div className={`${COLUMN_CLASSES} right-3 sm:right-6 lg:right-10 xl:right-16`}>
-                {projects.slice(2, 4).map((project, idx) => (
-                    <ProjectShard key={project.id} project={project} number={idx + 3} side="right" delay={0.2 + idx * 0.15} />
-                ))}
-            </div>
+            {count > 0 && (
+                <>
+                    <ShardDetail project={projects[active]} index={active} count={count} progress={progress} />
+                    <ShardManifest projects={projects} active={active} progress={progress} onSelect={selectShard} />
+                </>
+            )}
 
             {/* Mobile: swipeable horizontal deck */}
             <motion.div

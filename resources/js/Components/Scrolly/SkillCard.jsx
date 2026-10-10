@@ -1,28 +1,25 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Layers } from 'lucide-react';
-import CornerBrackets from './CornerBrackets';
+import HoloCard from './HoloCard';
 import { ICONS } from './constants';
 
-export default function SkillCard({ skill, index, side, parallaxY, leaderId }) {
+export default function SkillCard({ skill, index, side, pitch, parallaxY, leaderId }) {
     const Icon = ICONS[skill.icon] ?? Layers;
     const isLeft = side === 'left';
 
     return (
-        <motion.div
-            data-leader-target={leaderId}
-            initial={{ opacity: 0, x: isLeft ? -30 : 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.4, delay: index * 0.1 }}
+        <HoloCard
+            side={side}
+            pitch={pitch}
+            delay={index * 0.1}
+            leaderId={leaderId}
+            corners={isLeft ? ['tr', 'bl'] : ['tl', 'br']}
+            bracketSize="w-2.5 h-2.5"
+            rounded="rounded-xl"
             style={{ y: parallaxY }}
-            className="p-3 sm:p-3.5 rounded-xl bg-zinc-950/85 border border-cyan-500/30 hover:border-cyan-400/60 transition-all space-y-2 relative overflow-hidden group shadow-[0_0_25px_rgba(6,182,212,0.12)]"
+            className="group"
+            faceClassName="p-3 sm:p-3.5 bg-zinc-950/85 border border-cyan-500/30 group-hover:border-cyan-400/60 transition-colors space-y-2 shadow-[0_0_25px_rgba(6,182,212,0.12)]"
         >
-            <CornerBrackets
-                corners={isLeft ? ['tr', 'bl'] : ['tl', 'br']}
-                size="w-2.5 h-2.5"
-                color="border-cyan-400/80"
-            />
-
             <div className="flex items-center justify-between text-[8px] font-mono">
                 <span className="text-cyan-400 uppercase font-bold tracking-wider">{skill.serial}</span>
                 <span className="text-cyan-300 font-bold bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20 uppercase tracking-wider">
@@ -60,6 +57,6 @@ export default function SkillCard({ skill, index, side, parallaxY, leaderId }) {
                 </div>
                 <span className="text-zinc-500 font-bold">PRODUCTION</span>
             </div>
-        </motion.div>
+        </HoloCard>
     );
 }

@@ -39,3 +39,7 @@ export function coverTransform(viewportW, viewportH) {
 
 /** Maps a normalized image point (0..1) to viewport pixels using the same cover crop as the canvas. */
 export const imageToViewport = (t, nx, ny) => [t.offX + nx * t.drawW, t.offY + ny * t.drawH];
+
+/** clip-path for an armor-plate shape: top-left and bottom-right corners cut at 45°. */
+export const chamferClip = (cut) =>
+    `polygon(${cut}px 0, 100% 0, 100% calc(100% - ${cut}px), calc(100% - ${cut}px) 100%, 0 100%, 0 ${cut}px)`;

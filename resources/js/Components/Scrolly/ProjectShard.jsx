@@ -1,25 +1,118 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ExternalLink, GitBranch } from 'lucide-react';
-import CornerBrackets from './CornerBrackets';
+import { ExternalLink, GitBranch, Lock, ScanLine } from 'lucide-react';
+import HoloCard from './HoloCard';
+import { chamferClip } from './constants';
 
-function ProjectLinks({ project, compact = false }) {
-    if (!project.demo && !project.github) return null;
+export const pad = (n) => String(n).padStart(2, '0');
+
+const GRID_BG = {
+    backgroundImage:
+        'linear-gradient(rgba(244, 114, 182, 0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(244, 114, 182, 0.12) 1px, transparent 1px)',
+    backgroundSize: '14px 14px',
+};
+
+/** Screenshot with a pink HUD treatment, or a "no feed" placeholder for private builds. */
+function ShardMedia({ project, number, className = '' }) {
+    return (
+        <div className={`relative overflow-hidden border border-pink-500/25 bg-zinc-950 ${className}`}>
+            {project.image ? (
+                <>
+                    <img
+                        src={project.image}
+                        alt={project.title}
+                        loading="lazy"
+                        className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/85 via-transparent to-pink-500/10" />
+                </>
+            ) : (
+                <div className="absolute inset-0 flex items-center justify-center" style={GRID_BG}>
+                    <span
+                        aria-hidden="true"
+                        className="font-mono font-black text-5xl text-transparent select-none"
+                        style={{ WebkitTextStroke: '1px rgba(244, 114, 182, 0.55)' }}
+                    >
+                        {pad(number)}
+                    </span>
+                </div>
+            )}
+
+            <span className="absolute bottom-1.5 left-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 bg-black/75 border border-pink-500/30 font-mono text-[8px] tracking-widest text-pink-300 uppercase">
+                {project.image ? (
+                    <>
+                        <ScanLine className="w-2.5 h-2.5" aria-hidden="true" />
+                        Visual feed
+                    </>
+                ) : (
+                    <>
+                        <Lock className="w-2.5 h-2.5" aria-hidden="true" />
+                        No feed // private build
+                    </>
+                )}
+            </span>
+
+            {/* Targeting reticle */}
+            <span aria-hidden="true" className="absolute bottom-1.5 right-1.5 w-3 h-3 border-b border-r border-pink-400/80" />
+            <span aria-hidden="true" className="absolute top-1.5 right-1.5 w-3 h-3 border-t border-r border-pink-400/80" />
+        </div>
+    );
+}
+
+function ShardStatus({ project }) {
+    return project.demo ? (
+        <span className="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 border border-emerald-400/30 bg-emerald-500/10 font-mono text-[8px] font-bold tracking-widest text-emerald-300 uppercase">
+            <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
+            Live
+        </span>
+    ) : (
+        <span className="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 border border-white/10 bg-white/5 font-mono text-[8px] font-bold tracking-widest text-zinc-400 uppercase">
+            <Lock className="w-2.5 h-2.5" aria-hidden="true" />
+            Private
+        </span>
+    );
+}
+
+function ShardTags({ tags, limit }) {
+    return (
+        <div className="flex flex-wrap gap-1">
+            {tags.slice(0, limit).map((tag) => (
+                <span
+                    key={tag}
+                    className="font-mono text-[9px] px-1.5 py-0.5 bg-pink-500/5 border border-pink-500/25 text-pink-200/90"
+                >
+                    {tag}
+                </span>
+            ))}
+        </div>
+    );
+}
+
+function ShardLinks({ project, compact = false }) {
+    const size = compact ? 'text-[10px] px-2.5 py-1' : 'text-[11px] px-3 py-1.5';
+
+    if (!project.demo && !project.github) {
+        return (
+            <div className="inline-flex items-center gap-1.5 font-mono text-[9px] text-zinc-500 uppercase tracking-widest">
+                <Lock className="w-3 h-3" aria-hidden="true" />
+                Classified // source private
+            </div>
+        );
+    }
 
     return (
-        <div className={`flex items-center justify-between border-t border-white/5 ${compact ? 'pt-2' : 'pt-1.5'}`}>
-            {project.demo ? (
+        <div className="flex items-center gap-2">
+            {project.demo && (
                 <a
                     href={project.demo}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`inline-flex items-center gap-1 font-semibold text-pink-400 hover:text-pink-300 transition-colors ${compact ? 'text-[10px]' : 'text-[11px]'}`}
+                    style={{ clipPath: chamferClip(6) }}
+                    className={`inline-flex items-center gap-1.5 ${size} font-semibold bg-pink-500/20 text-pink-100 hover:bg-pink-500/35 hover:text-white transition-colors`}
                 >
-                    <span>Open Module</span>
+                    Launch module
                     <ExternalLink className="w-3 h-3" aria-hidden="true" />
                 </a>
-            ) : (
-                <span />
             )}
             {project.github && (
                 <a
@@ -27,101 +120,113 @@ function ProjectLinks({ project, compact = false }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={`${project.title} source code on GitHub`}
-                    title="GitHub Repo"
-                    className="text-zinc-500 hover:text-white transition-colors"
+                    className={`inline-flex items-center gap-1.5 ${size} border border-white/10 text-zinc-300 hover:text-white hover:border-white/30 transition-colors`}
                 >
-                    <GitBranch className="w-3.5 h-3.5" aria-hidden="true" />
+                    <GitBranch className="w-3 h-3" aria-hidden="true" />
+                    Source
                 </a>
             )}
         </div>
     );
 }
 
-/** Desktop floating shard (left/right column). */
-export function ProjectShard({ project, number, side, delay = 0 }) {
-    const isLeft = side === 'left';
-
+/** One bar per shard: past shards full, the active one fills with scroll progress. */
+function ScanProgress({ count, index, progress }) {
     return (
-        <motion.div
-            initial={{ opacity: 0, x: isLeft ? -30 : 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay }}
-            className="relative group glass-card rounded-xl p-3 sm:p-3.5 border border-pink-500/30 bg-zinc-950/85 hover:border-pink-400/60 shadow-xl backdrop-blur-2xl flex flex-col justify-between transition-all duration-300"
-        >
-            <CornerBrackets
-                corners={isLeft ? ['tl', 'br'] : ['tr', 'bl']}
-                size="w-2 h-2"
-                color="border-pink-400/80"
-            />
-
-            <div className="space-y-2">
-                <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
-                    <div className="flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-pink-400 animate-pulse" />
-                        <span className="font-mono text-[9px] text-pink-300 font-bold uppercase tracking-wider">
-                            ARMOR SHARD #{number}
-                        </span>
-                    </div>
-                    <span className="font-mono text-[8px] text-zinc-400 bg-pink-500/10 px-1.5 py-0.5 rounded border border-pink-500/20">
-                        ACTIVE
-                    </span>
-                </div>
-
-                {project.image && (
-                    <div className="relative h-14 sm:h-16 w-full rounded-md overflow-hidden border border-pink-500/20">
-                        <img
-                            src={project.image}
-                            alt={project.title}
-                            loading="lazy"
-                            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+        <div className="pt-2.5 border-t border-white/5 space-y-1.5">
+            <div className="flex gap-1">
+                {Array.from({ length: count }, (_, i) => (
+                    <div key={i} className="h-1 flex-1 bg-white/5 overflow-hidden">
+                        <div
+                            className="h-full bg-pink-400 shadow-[0_0_8px_rgba(244,114,182,0.8)]"
+                            style={{ width: `${i < index ? 100 : i === index ? progress * 100 : 0}%` }}
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent" />
                     </div>
-                )}
-
-                <h3 className="text-xs sm:text-[13px] font-bold text-white group-hover:text-pink-300 transition-colors leading-snug">
-                    {project.title}
-                </h3>
-                <p className="text-[11px] text-zinc-400 leading-relaxed line-clamp-2">{project.description}</p>
+                ))}
             </div>
+            <div className="flex items-center justify-between font-mono text-[8px] uppercase tracking-widest text-zinc-500">
+                <span>Matrix scan</span>
+                <span className="text-pink-300/80">{index < count - 1 ? 'Scroll ▾ next shard' : 'Scan complete'}</span>
+            </div>
+        </div>
+    );
+}
 
-            <div className="pt-2 space-y-2">
-                <div className="flex flex-wrap gap-1">
-                    {project.tags.slice(0, 4).map((tag) => (
-                        <span
-                            key={tag}
-                            className="text-[8.5px] font-mono px-1.5 py-0.5 rounded bg-zinc-900/90 text-pink-300/90 border border-pink-500/20"
-                        >
-                            {tag}
-                        </span>
-                    ))}
+/** Desktop: full readout of the active shard (left of the mecha). */
+export function ShardDetail({ project, index, count, progress }) {
+    return (
+        <HoloCard
+            side="left"
+            tone="pink"
+            yaw={10}
+            chamfer={18}
+            corners={['tr', 'bl']}
+            bracketSize="w-2.5 h-2.5"
+            rounded=""
+            className="group hidden md:block absolute top-20 lg:top-24 left-3 sm:left-6 lg:left-10 xl:left-16 z-30 w-full max-w-[270px] lg:max-w-[300px] xl:max-w-[340px] pointer-events-auto"
+            faceClassName="p-4 bg-zinc-950/85 border border-pink-500/35 backdrop-blur-xl space-y-3"
+        >
+            <header className="flex items-center justify-between font-mono text-[9px] uppercase tracking-widest">
+                <span className="flex items-center gap-1.5 text-pink-300 font-bold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-pink-400 animate-pulse" />
+                    Shard {pad(index + 1)} // analysis
+                </span>
+                <span className="text-zinc-400">
+                    {pad(index + 1)}
+                    <span className="text-zinc-600">/{pad(count)}</span>
+                </span>
+            </header>
+
+            {/* Keyed remount: each shard animates in. No exit/wait, so fast scrolling can't strand stale content */}
+            <motion.div
+                key={project.id}
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
+                className="space-y-3"
+            >
+                <ShardMedia project={project} number={index + 1} className="h-28 lg:h-32 xl:h-36" />
+
+                <div className="space-y-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                        <h3 className="text-sm lg:text-base font-bold text-white leading-snug">{project.title}</h3>
+                        <ShardStatus project={project} />
+                    </div>
+                    <p className="text-[11px] lg:text-xs text-zinc-300/90 leading-relaxed line-clamp-4">{project.description}</p>
                 </div>
-                <ProjectLinks project={project} />
-            </div>
-        </motion.div>
+
+                <ShardTags tags={project.tags} />
+                <ShardLinks project={project} />
+            </motion.div>
+
+            <ScanProgress count={count} index={index} progress={progress} />
+        </HoloCard>
     );
 }
 
 /** Mobile swipeable deck card. */
 export function MobileProjectCard({ project, number }) {
     return (
-        <div className="snap-center shrink-0 w-[270px] p-3.5 rounded-2xl bg-zinc-950/90 border border-pink-500/40 backdrop-blur-xl shadow-2xl space-y-2 flex flex-col justify-between">
-            <div className="space-y-1">
-                <div className="flex items-center justify-between border-b border-white/10 pb-1">
-                    <span className="font-mono text-[9px] text-pink-300 font-bold uppercase">ARMOR SHARD #{number}</span>
-                    <span className="text-[8px] font-mono text-zinc-400 bg-pink-500/10 px-1.5 py-0.5 rounded border border-pink-500/20">
-                        ACTIVE
-                    </span>
-                </div>
-                {project.image && (
-                    <div className="relative h-16 w-full rounded-lg overflow-hidden border border-pink-500/20">
-                        <img src={project.image} alt={project.title} loading="lazy" className="w-full h-full object-cover object-center" />
+        <div
+            style={{ clipPath: chamferClip(14) }}
+            className="snap-center shrink-0 w-[270px] p-px bg-gradient-to-br from-pink-400/60 via-pink-500/20 to-pink-400/50"
+        >
+            <div
+                style={{ clipPath: chamferClip(14) }}
+                className="h-full p-3.5 bg-zinc-950/95 backdrop-blur-xl space-y-2.5 flex flex-col justify-between"
+            >
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between font-mono text-[9px] uppercase tracking-widest">
+                        <span className="text-pink-300 font-bold">Shard {pad(number)}</span>
+                        <ShardStatus project={project} />
                     </div>
-                )}
-                <h4 className="text-xs font-bold text-white truncate">{project.title}</h4>
-                <p className="text-[10px] text-zinc-400 leading-relaxed line-clamp-2">{project.description}</p>
+                    <ShardMedia project={project} number={number} className="h-20" />
+                    <h4 className="text-xs font-bold text-white leading-snug">{project.title}</h4>
+                    <p className="text-[10px] text-zinc-400 leading-relaxed line-clamp-2">{project.description}</p>
+                    <ShardTags tags={project.tags} limit={3} />
+                </div>
+                <ShardLinks project={project} compact />
             </div>
-            <ProjectLinks project={project} compact />
         </div>
     );
 }
