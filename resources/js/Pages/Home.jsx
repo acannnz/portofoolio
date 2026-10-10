@@ -29,7 +29,7 @@ export default function Home({ profile }) {
                 <main>
                     <ScrollyExperience profile={profile} />
                     <ExperienceSection experience={profile.experience} />
-                    <ContactSection email={profile.email} />
+                    <ContactSection contact={profile.contact} />
                 </main>
 
                 <footer className="py-8 border-t border-zinc-900 text-center text-xs text-zinc-600 relative z-20">

@@ -31,8 +31,6 @@ composer setup        # install dependency, .env, key, migrasi, build
 composer dev          # server + vite
 ```
 
-Isi `PORTFOLIO_EMAIL` di `.env` agar tombol *Send Email* muncul (disembunyikan jika kosong).
-
 ## Mengubah konten
 
 Semua teks yang tampil ada di [config/portfolio.php](config/portfolio.php). Gunakan `null`

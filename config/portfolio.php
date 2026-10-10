@@ -18,8 +18,11 @@ return [
     'stack' => 'Laravel • React • Node',
     'availability' => 'Available for Hire',
 
-    // Set PORTFOLIO_EMAIL in .env. The contact button is hidden while it is empty.
-    'email' => env('PORTFOLIO_EMAIL'),
+    // Contact section links; each button is hidden while its value is empty.
+    'contact' => [
+        'email' => 'putu.candra689@gmail.com',
+        'github' => 'https://github.com/acannnz',
+    ],
 
     'skills' => [
         [
