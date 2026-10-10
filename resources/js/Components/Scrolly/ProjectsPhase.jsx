@@ -1,18 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ChevronDown, Shield } from 'lucide-react';
-import LeaderLines from './LeaderLines';
 import { MobileProjectCard, ProjectShard } from './ProjectShard';
-
-const PINK = '#f472b6';
-
-// Short tether from each shard column towards the mecha
-const LINES = [
-    { d: 'M 370 340 H 295', mid: [370, 340], end: [295, 340] },
-    { d: 'M 370 660 H 295', mid: [370, 660], end: [295, 660] },
-    { d: 'M 630 340 H 705', mid: [630, 340], end: [705, 340] },
-    { d: 'M 630 660 H 705', mid: [630, 660], end: [705, 660] },
-];
 
 const COLUMN_CLASSES =
     'hidden md:flex absolute inset-y-0 z-30 flex-col justify-center gap-2.5 sm:gap-3 max-w-[280px] lg:max-w-[310px] xl:max-w-[330px] w-full pointer-events-auto';
@@ -35,16 +24,6 @@ export default function ProjectsPhase({ projects }) {
                     <span>STAGE 03 • ARMOR DETACHMENT // PROJECT MATRIX</span>
                 </div>
             </div>
-
-            <LeaderLines
-                id="pink-glow"
-                lines={LINES}
-                stroke={PINK}
-                node={PINK}
-                dash="5 3"
-                duration={0.5}
-                opacity={0.7}
-            />
 
             <div className={`${COLUMN_CLASSES} left-3 sm:left-6 lg:left-10 xl:left-16`}>
                 {projects.slice(0, 2).map((project, idx) => (

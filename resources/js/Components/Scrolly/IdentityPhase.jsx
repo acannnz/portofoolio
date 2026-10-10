@@ -4,20 +4,21 @@ import { Cpu, Terminal } from 'lucide-react';
 import CornerBrackets from './CornerBrackets';
 import HintPill from './HintPill';
 import LeaderLines from './LeaderLines';
-import { FRAME_INTRO_END } from './constants';
-
-const ANCHORS = [[465, 175]];
-
-const LINES = [
-    { d: 'M 465 175 H 370 V 440 H 300', mid: [370, 440], end: [300, 440], delay: 0.15 },
-    { d: 'M 525 450 H 630 V 510 H 700', mid: [630, 510], end: [700, 510], delay: 0.25 },
-];
+import { identityAnchors } from './anchors';
+import { FRAME_INTRO_END, coverTransform, imageToViewport } from './constants';
 
 const NAME_GRADIENT = 'text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-cyan-300';
 
 // Landing frames: pilot identity (name + role) and dossier connected to the mecha by laser lines.
-export default function IdentityPhase({ profile, typedName, nameComplete, frame, dashOffset }) {
+export default function IdentityPhase({ profile, typedName, nameComplete, frame, viewport, dashOffset }) {
     const parallax = (frame - FRAME_INTRO_END) * 1.2 * 0.4;
+
+    const cover = coverTransform(viewport.w, viewport.h);
+    const { head, chest } = identityAnchors(frame);
+    const links = [
+        { key: 'head', anchor: imageToViewport(cover, ...head), targetId: 'identity-left', side: 'left', delay: 0.15 },
+        { key: 'chest', anchor: imageToViewport(cover, ...chest), targetId: 'identity-right', side: 'right', delay: 0.25 },
+    ];
 
     return (
         <motion.div
@@ -28,15 +29,16 @@ export default function IdentityPhase({ profile, typedName, nameComplete, frame,
             transition={{ duration: 0.5 }}
             className="absolute inset-0 z-30 pointer-events-none"
         >
-            <LeaderLines id="cyan-glow" anchors={ANCHORS} lines={LINES} dashOffset={dashOffset} />
+            <LeaderLines id="cyan-glow" links={links} dashOffset={dashOffset} />
 
             {/* Desktop left: name & role */}
             <motion.div
+                data-leader-target="identity-left"
                 initial={{ opacity: 0, x: 25, scale: 0.96 }}
                 animate={{ opacity: 1, x: 0, scale: 1 }}
                 transition={{ duration: 0.6, delay: 0.5 }}
                 style={{ y: -parallax }}
-                className="hidden md:block absolute top-1/2 -translate-y-1/2 left-3 sm:left-6 lg:left-12 z-30 max-w-xs sm:max-w-sm w-full pointer-events-auto"
+                className="hidden md:block absolute top-1/2 -translate-y-1/2 left-3 sm:left-6 lg:left-12 z-30 max-w-[260px] lg:max-w-[280px] xl:max-w-xs 2xl:max-w-sm w-full pointer-events-auto"
             >
                 <div className="relative glass-card rounded-2xl p-5 sm:p-6 border border-cyan-500/30 bg-zinc-950/80 backdrop-blur-2xl shadow-[0_0_40px_rgba(6,182,212,0.18)] space-y-4 overflow-hidden w-full">
                     <CornerBrackets />
@@ -84,11 +86,12 @@ export default function IdentityPhase({ profile, typedName, nameComplete, frame,
 
             {/* Desktop right: bio & telemetry */}
             <motion.div
+                data-leader-target="identity-right"
                 initial={{ opacity: 0, x: -25, scale: 0.96 }}
                 animate={{ opacity: 1, x: 0, scale: 1 }}
                 transition={{ duration: 0.6, delay: 0.6 }}
                 style={{ y: parallax }}
-                className="hidden md:block absolute top-1/2 -translate-y-1/2 right-3 sm:right-6 lg:right-12 z-30 max-w-xs sm:max-w-sm w-full pointer-events-auto"
+                className="hidden md:block absolute top-1/2 -translate-y-1/2 right-3 sm:right-6 lg:right-12 z-30 max-w-[260px] lg:max-w-[280px] xl:max-w-xs 2xl:max-w-sm w-full pointer-events-auto"
             >
                 <div className="relative glass-card rounded-2xl p-5 sm:p-6 border border-cyan-500/30 bg-zinc-950/80 backdrop-blur-2xl shadow-[0_0_40px_rgba(6,182,212,0.18)] space-y-3.5 overflow-hidden w-full">
                     <CornerBrackets />

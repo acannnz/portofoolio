@@ -25,3 +25,17 @@ export function getPhase(frame, isSummoned) {
 export const ICONS = { Server, Code2, Database, Zap, Network, Terminal, Layers };
 
 export const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+// ---- Image <-> viewport mapping (canvas draws the frame with object-fit: cover) ----
+export const IMAGE_SIZE = { w: 1280, h: 720 };
+
+export function coverTransform(viewportW, viewportH) {
+    const imageRatio = IMAGE_SIZE.w / IMAGE_SIZE.h;
+    const isWider = viewportW / viewportH > imageRatio;
+    const drawW = isWider ? viewportW : viewportH * imageRatio;
+    const drawH = isWider ? viewportW / imageRatio : viewportH;
+    return { drawW, drawH, offX: (viewportW - drawW) / 2, offY: (viewportH - drawH) / 2 };
+}
+
+/** Maps a normalized image point (0..1) to viewport pixels using the same cover crop as the canvas. */
+export const imageToViewport = (t, nx, ny) => [t.offX + nx * t.drawW, t.offY + ny * t.drawH];

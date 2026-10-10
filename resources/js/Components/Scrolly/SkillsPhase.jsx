@@ -4,39 +4,27 @@ import { Cpu, Layers } from 'lucide-react';
 import HintPill from './HintPill';
 import LeaderLines from './LeaderLines';
 import SkillCard from './SkillCard';
-import { FRAME_STANDING_CENTER, ICONS } from './constants';
+import { skillAnchors } from './anchors';
+import { FRAME_STANDING_CENTER, ICONS, coverTransform, imageToViewport } from './constants';
 
-// Anchor nodes on the mecha body: shoulders, chest, waist (left side then right side)
-const ANCHORS = [
-    [435, 260], [450, 440], [435, 650],
-    [565, 260], [550, 440], [565, 650],
-];
-
-const LINES = [
-    // Left: shoulder, core, waist
-    { d: 'M 435 260 H 360 V 316 H 307', mid: [360, 316], end: [307, 316], delay: 0.15 },
-    { d: 'M 450 440 H 370 V 500 H 299', mid: [370, 500], end: [299, 500], delay: 0.25 },
-    { d: 'M 435 650 H 360 V 684 H 297', mid: [360, 684], end: [297, 684], delay: 0.35 },
-    // Right: shoulder, core, waist
-    { d: 'M 565 260 H 640 V 316 H 693', mid: [640, 316], end: [693, 316], delay: 0.15 },
-    { d: 'M 550 440 H 630 V 500 H 701', mid: [630, 500], end: [701, 500], delay: 0.25 },
-    { d: 'M 565 650 H 640 V 684 H 703', mid: [640, 684], end: [703, 684], delay: 0.35 },
-];
+// Where the elbow of each line sits between body and card (0 = at the body, 1 = at the card)
+const ELBOW_FRAC = [0.6, 0.4, 0.6];
 
 // Vertical parallax factor per card row (top, middle, bottom)
 const PARALLAX = [-0.4, -0.1, 0.35];
 
-function SkillColumn({ skills, side, offset, frame }) {
+function SkillColumn({ skills, side, frame }) {
     const sidePosition = side === 'left' ? 'left-3 sm:left-6 lg:left-12' : 'right-3 sm:right-6 lg:right-12';
 
     return (
-        <div className={`hidden md:flex absolute inset-y-0 ${sidePosition} z-30 flex-col justify-center gap-3 max-w-xs sm:max-w-sm w-full pointer-events-auto`}>
+        <div className={`hidden md:flex absolute inset-y-0 ${sidePosition} z-30 flex-col justify-center gap-3 max-w-[260px] lg:max-w-[280px] xl:max-w-xs 2xl:max-w-sm w-full pointer-events-auto`}>
             {skills.map((skill, idx) => (
                 <SkillCard
                     key={skill.name}
                     skill={skill}
                     index={idx}
                     side={side}
+                    leaderId={`skill-${side}-${idx}`}
                     parallaxY={(frame - FRAME_STANDING_CENTER) * PARALLAX[idx]}
                 />
             ))}
@@ -45,7 +33,20 @@ function SkillColumn({ skills, side, offset, frame }) {
 }
 
 // Standing frames: six skill modules tethered to the mecha body by laser lines.
-export default function SkillsPhase({ skills, frame, dashOffset }) {
+export default function SkillsPhase({ skills, frame, viewport, dashOffset }) {
+    const cover = coverTransform(viewport.w, viewport.h);
+    const anchors = skillAnchors(frame);
+    const links = ['left', 'right'].flatMap((side) =>
+        anchors[side].map((anchor, idx) => ({
+            key: `${side}-${idx}`,
+            anchor: imageToViewport(cover, ...anchor),
+            targetId: `skill-${side}-${idx}`,
+            side,
+            frac: ELBOW_FRAC[idx],
+            delay: 0.15 + idx * 0.1,
+        })),
+    );
+
     return (
         <motion.div
             key="phase-robotic-skills"
@@ -55,7 +56,7 @@ export default function SkillsPhase({ skills, frame, dashOffset }) {
             transition={{ duration: 0.5 }}
             className="absolute inset-0 z-30 pointer-events-none"
         >
-            <LeaderLines id="cyan-glow-2" anchors={ANCHORS} lines={LINES} dashOffset={dashOffset} duration={0.7} />
+            <LeaderLines id="cyan-glow-2" links={links} dashOffset={dashOffset} />
 
             <div className="absolute top-6 inset-x-0 z-30 flex justify-center pointer-events-none">
                 <div className="px-4 py-1.5 rounded-full bg-black/60 border border-cyan-500/30 backdrop-blur-md flex items-center gap-3 text-xs font-mono text-cyan-300 shadow-xl">

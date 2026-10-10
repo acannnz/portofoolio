@@ -10,6 +10,7 @@ import {
     PHASE,
     TOTAL_FRAMES,
     clamp,
+    coverTransform,
     getPhase,
 } from './Scrolly/constants';
 
@@ -44,6 +45,8 @@ export default function ScrollyExperience({ profile }) {
     const [isSummoned, setIsSummoned] = useState(false);
     const [isIntroPlaying, setIsIntroPlaying] = useState(false);
     const [currentFrame, setCurrentFrame] = useState(1);
+    // Needed so HUD overlays can map image coordinates through the same cover crop as the canvas
+    const [viewport, setViewport] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
 
     const phase = getPhase(currentFrame, isSummoned);
     const loadingProgress = Math.round((introLoaded / FRAME_INTRO_END) * 100);
@@ -67,16 +70,14 @@ export default function ScrollyExperience({ profile }) {
             canvas.height = height * dpr;
         }
 
-        const imgRatio = (img.naturalWidth || 1280) / (img.naturalHeight || 720);
-        const drawW = width / height > imgRatio ? width : height * imgRatio;
-        const drawH = width / height > imgRatio ? width / imgRatio : height;
+        const { drawW, drawH, offX, offY } = coverTransform(width, height);
 
         ctx.save();
         ctx.scale(dpr, dpr);
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
         ctx.clearRect(0, 0, width, height);
-        ctx.drawImage(img, (width - drawW) / 2, (height - drawH) / 2, drawW, drawH);
+        ctx.drawImage(img, offX, offY, drawW, drawH);
         ctx.restore();
     }, []);
 
@@ -138,6 +139,7 @@ export default function ScrollyExperience({ profile }) {
 
         // Resizing clears the canvas, so repaint the last drawn frame
         const handleResize = () => {
+            setViewport({ w: window.innerWidth, h: window.innerHeight });
             const img = imagesRef.current[lastDrawnRef.current - 1];
             if (isReady(img)) renderFrame(img);
         };
@@ -292,6 +294,7 @@ export default function ScrollyExperience({ profile }) {
                             typedName={typedName}
                             nameComplete={nameComplete}
                             frame={currentFrame}
+                            viewport={viewport}
                             dashOffset={lineDashOffset}
                         />
                     )}
@@ -304,6 +307,7 @@ export default function ScrollyExperience({ profile }) {
                             key="skills"
                             skills={profile.skills}
                             frame={currentFrame}
+                            viewport={viewport}
                             dashOffset={lineDashOffset}
                         />
                     )}

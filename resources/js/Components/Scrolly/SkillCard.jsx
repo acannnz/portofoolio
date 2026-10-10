@@ -4,12 +4,13 @@ import { Layers } from 'lucide-react';
 import CornerBrackets from './CornerBrackets';
 import { ICONS } from './constants';
 
-export default function SkillCard({ skill, index, side, parallaxY }) {
+export default function SkillCard({ skill, index, side, parallaxY, leaderId }) {
     const Icon = ICONS[skill.icon] ?? Layers;
     const isLeft = side === 'left';
 
     return (
         <motion.div
+            data-leader-target={leaderId}
             initial={{ opacity: 0, x: isLeft ? -30 : 30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4, delay: index * 0.1 }}
