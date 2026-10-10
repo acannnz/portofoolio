@@ -86,6 +86,17 @@ return [
             'image' => '/images/tokosendiri_landing.webp',
         ],
         [
+            'id' => 5,
+            'title' => 'Sistem Informasi Klinik & Praktik Dokter',
+            'description' => 'Studi kasus sistem klinik multi-unit yang dipakai klinik dan praktik dokter: registrasi pasien, rawat jalan dengan rekam medis elektronik (SOAP), e-resep farmasi real-time, laboratorium, kasir/billing, hingga logistik dan stock opname.',
+            'tags' => ['CodeIgniter HMVC', 'SQL Server', 'jQuery', 'WebSocket', 'EMR / SOAP'],
+            'github' => null,
+            'demo' => null,
+            'image' => null,
+            // Client system, so no screenshots: render a live 3D module map instead (see ProjectShard VISUALS)
+            'visual' => 'clinic-network',
+        ],
+        [
             'id' => 1,
             'title' => 'Angry Birds 3D Web Game',
             'description' => 'Game 3D ketapel interaktif dengan simulasi fisika trajektori gravitasi (Rapier), peruntuhan struktur balok es/kayu/batu, dan WebGL Three.js.',

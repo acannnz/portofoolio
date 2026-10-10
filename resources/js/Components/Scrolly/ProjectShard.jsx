@@ -1,10 +1,16 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ExternalLink, GitBranch, Lock, ScanLine } from 'lucide-react';
+import { ExternalLink, GitBranch, Lock, Orbit, ScanLine } from 'lucide-react';
+import ClinicNetworkVisual from './ClinicNetworkVisual';
 import HoloCard from './HoloCard';
 import { chamferClip } from './constants';
 
 export const pad = (n) => String(n).padStart(2, '0');
+
+// Live visuals for projects that can't show screenshots (keyed by 'visual' in config/portfolio.php)
+const VISUALS = {
+    'clinic-network': ClinicNetworkVisual,
+};
 
 const GRID_BG = {
     backgroundImage:
@@ -12,11 +18,20 @@ const GRID_BG = {
     backgroundSize: '14px 14px',
 };
 
-/** Screenshot with a pink HUD treatment, or a "no feed" placeholder for private builds. */
+/** Screenshot with a pink HUD treatment, a live visual, or a "no feed" placeholder for private builds. */
 function ShardMedia({ project, number, className = '' }) {
+    const Visual = VISUALS[project.visual];
+
     return (
         <div className={`relative overflow-hidden border border-pink-500/25 bg-zinc-950 ${className}`}>
-            {project.image ? (
+            {Visual ? (
+                <div
+                    className="absolute inset-0"
+                    style={{ background: 'radial-gradient(ellipse at 50% 60%, rgba(236, 72, 153, 0.16), transparent 70%)' }}
+                >
+                    <Visual />
+                </div>
+            ) : project.image ? (
                 <>
                     <img
                         src={project.image}
@@ -39,7 +54,12 @@ function ShardMedia({ project, number, className = '' }) {
             )}
 
             <span className="absolute bottom-1.5 left-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 bg-black/75 border border-pink-500/30 font-mono text-[8px] tracking-widest text-pink-300 uppercase">
-                {project.image ? (
+                {Visual ? (
+                    <>
+                        <Orbit className="w-2.5 h-2.5" aria-hidden="true" />
+                        Live 3D module map
+                    </>
+                ) : project.image ? (
                     <>
                         <ScanLine className="w-2.5 h-2.5" aria-hidden="true" />
                         Visual feed
