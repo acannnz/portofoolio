@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { ArrowRight, Cpu, Sparkles } from 'lucide-react';
+import { AnimatePresence, useReducedMotion } from 'framer-motion';
 import useTypewriter from '../hooks/useTypewriter';
 import IdentityPhase from './Scrolly/IdentityPhase';
 import ProjectsPhase from './Scrolly/ProjectsPhase';
 import SkillsPhase from './Scrolly/SkillsPhase';
+import SummonScreen from './Scrolly/SummonScreen';
 import {
     FRAME_INTRO_END,
     PHASE,
@@ -253,48 +253,13 @@ export default function ScrollyExperience({ profile }) {
                 {/* Scene 0: Summon button / loading */}
                 <AnimatePresence>
                     {!isSummoned && (
-                        <motion.div
+                        <SummonScreen
                             key="summon-screen"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="absolute inset-0 z-40 flex items-center justify-center p-6 select-none bg-[#030307]"
-                        >
-                            {!isLoading ? (
-                                <button
-                                    id="btn-summon-mecha"
-                                    type="button"
-                                    onClick={handleStartSummon}
-                                    className="px-10 py-5 rounded-2xl bg-zinc-900/90 hover:bg-zinc-800 text-white font-bold text-lg tracking-widest uppercase border border-cyan-400/50 shadow-[0_0_35px_rgba(6,182,212,0.3)] flex items-center gap-3 transition-all transform hover:scale-105 active:scale-95 cursor-pointer backdrop-blur-md"
-                                >
-                                    <Sparkles className="w-5 h-5 text-cyan-400" aria-hidden="true" />
-                                    <span>SUMMON MECHA</span>
-                                    <ArrowRight className="w-5 h-5 text-purple-400" aria-hidden="true" />
-                                </button>
-                            ) : (
-                                <div
-                                    role="status"
-                                    className="flex flex-col items-center gap-4 bg-zinc-950/90 p-8 rounded-2xl border border-cyan-500/40 backdrop-blur-xl shadow-[0_0_40px_rgba(6,182,212,0.2)] min-w-[320px]"
-                                >
-                                    <div className="flex items-center gap-2 text-cyan-400 font-mono text-xs uppercase tracking-widest">
-                                        <Cpu className="w-4 h-4 animate-spin text-cyan-400" aria-hidden="true" />
-                                        <span>SUMMONING PROTOCOL...</span>
-                                    </div>
-
-                                    <div className="w-full h-2 bg-zinc-900 rounded-full overflow-hidden border border-white/10 p-0.5">
-                                        <div
-                                            className="h-full bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 rounded-full transition-all duration-75"
-                                            style={{ width: `${loadingProgress}%` }}
-                                        />
-                                    </div>
-
-                                    <div className="w-full flex items-center justify-between font-mono text-[11px] text-zinc-400">
-                                        <span>INITIALIZING FRAMES</span>
-                                        <span className="text-cyan-400 font-bold">{loadingProgress}%</span>
-                                    </div>
-                                </div>
-                            )}
-                        </motion.div>
+                            profile={profile}
+                            isLoading={isLoading}
+                            loadingProgress={loadingProgress}
+                            onSummon={handleStartSummon}
+                        />
                     )}
                 </AnimatePresence>
 
