@@ -16,11 +16,18 @@ import {
 
 const frameUrl = (index) => `/frames/frame_${String(index).padStart(3, '0')}.webp`;
 
-// Lerp factor towards the scroll-driven target frame (higher = snappier)
-const FRAME_LERP = 0.45;
+// Time constant of the ease towards the scroll-driven target frame (higher = floatier, independent of refresh rate)
+const FRAME_SMOOTHING_MS = 120;
 const INTRO_DURATION_MS = 1500;
 // Frames after the intro start downloading at the latest this long after page load
 const REST_PRELOAD_DELAY_MS = 3000;
+// Decoded bitmaps are kept only around the playhead (each 1280x720 frame is ~3.7 MB decoded):
+// decode this many frames ahead / behind in the direction of travel, release beyond KEEP.
+const DECODE_AHEAD = 20;
+const DECODE_BEHIND = 6;
+const DECODE_KEEP = 24;
+// Crossfade between neighbouring frames is quantized so an idle scene stops repainting
+const BLEND_STEPS = 32;
 
 export default function ScrollyExperience({ profile }) {
     const reduceMotion = useReducedMotion();
@@ -28,9 +35,15 @@ export default function ScrollyExperience({ profile }) {
     const containerRef = useRef(null);
     const canvasRef = useRef(null);
 
-    // Image sequence. `lastDrawnRef` avoids repainting the canvas when the frame did not change.
-    const imagesRef = useRef([]);
-    const lastDrawnRef = useRef(0);
+    const ctxRef = useRef(null);
+
+    // Image sequence: compressed blobs for every frame, decoded ImageBitmaps only near the playhead.
+    // Bitmaps are decoded off the main thread, so drawing a new frame never stalls on image decoding.
+    const blobsRef = useRef([]);
+    const bitmapsRef = useRef(new Map());
+    const decodingRef = useRef(new Set());
+    // `drawnRef` avoids repainting the canvas when the frame and blend did not change
+    const drawnRef = useRef(null);
     const restStartedRef = useRef(false);
 
     // Animation state lives in refs so the rAF loop never re-subscribes
@@ -56,38 +69,45 @@ export default function ScrollyExperience({ profile }) {
     const { text: typedName, done: nameComplete } = useTypewriter(profile.name, isSummoned && !isIntroPlaying);
 
     // ---- Canvas rendering (object-fit: cover, DPR aware) ----
-    const renderFrame = useCallback((img) => {
+    // `top` is the next frame crossfaded over `bottom` at `alpha`, giving sub-frame motion between images.
+    const renderFrame = useCallback((bottom, top, alpha) => {
         const canvas = canvasRef.current;
-        const ctx = canvas?.getContext('2d');
-        if (!ctx || !img) return;
+        if (!canvas) return;
+        // Frames always cover the whole canvas, so an opaque context skips clearing and alpha compositing
+        ctxRef.current ??= canvas.getContext('2d', { alpha: false });
+        const ctx = ctxRef.current;
 
         const dpr = window.devicePixelRatio || 1;
         const width = window.innerWidth;
         const height = window.innerHeight;
 
-        if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
-            canvas.width = width * dpr;
-            canvas.height = height * dpr;
+        if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(height * dpr)) {
+            canvas.width = Math.round(width * dpr);
+            canvas.height = Math.round(height * dpr);
         }
 
         const { drawW, drawH, offX, offY } = coverTransform(width, height);
 
-        ctx.save();
-        ctx.scale(dpr, dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
-        ctx.clearRect(0, 0, width, height);
-        ctx.drawImage(img, offX, offY, drawW, drawH);
-        ctx.restore();
+        ctx.globalAlpha = 1;
+        ctx.drawImage(bottom, offX, offY, drawW, drawH);
+        if (top) {
+            ctx.globalAlpha = alpha;
+            ctx.drawImage(top, offX, offY, drawW, drawH);
+        }
     }, []);
 
     // ---- Frame preloading: intro frames first, the rest in the background ----
-    const loadFrame = useCallback((index, onSettled) => {
-        const img = new Image();
-        img.decoding = 'async';
-        img.onload = img.onerror = () => onSettled?.();
-        img.src = frameUrl(index);
-        imagesRef.current[index - 1] = img;
+    const loadFrame = useCallback(async (index, onSettled) => {
+        try {
+            const res = await fetch(frameUrl(index));
+            if (res.ok) blobsRef.current[index - 1] = await res.blob();
+        } catch {
+            // Missing frame: the renderer falls back to the nearest decoded one
+        }
+        onSettled?.();
     }, []);
 
     const startRestLoading = useCallback(() => {
@@ -112,43 +132,104 @@ export default function ScrollyExperience({ profile }) {
         };
     }, [loadFrame, startRestLoading]);
 
-    // ---- Render loop: lerp towards the target frame, repaint only on change ----
+    // ---- Render loop: ease towards the target frame, crossfade neighbours, repaint only on change ----
     useEffect(() => {
-        const isReady = (img) => img && img.complete && img.naturalWidth > 0;
+        const bitmaps = bitmapsRef.current;
+        const decoding = decodingRef.current;
+        let unmounted = false;
+        let direction = 1;
+        let lastTime = performance.now();
 
-        const loop = () => {
+        // Keeps decoded bitmaps in a window around the playhead, biased towards the direction of travel
+        const syncDecodeWindow = (pos) => {
+            const playhead = Math.round(pos);
+            const keepLo = playhead - DECODE_KEEP;
+            const keepHi = playhead + DECODE_KEEP;
+            for (const [frame, bitmap] of bitmaps) {
+                if (frame < keepLo || frame > keepHi) {
+                    bitmap.close();
+                    bitmaps.delete(frame);
+                }
+            }
+
+            const lo = clamp(playhead - (direction > 0 ? DECODE_BEHIND : DECODE_AHEAD), 1, TOTAL_FRAMES);
+            const hi = clamp(playhead + (direction > 0 ? DECODE_AHEAD : DECODE_BEHIND), 1, TOTAL_FRAMES);
+            for (let frame = lo; frame <= hi; frame++) {
+                const blob = blobsRef.current[frame - 1];
+                if (!blob || bitmaps.has(frame) || decoding.has(frame)) continue;
+                decoding.add(frame);
+                createImageBitmap(blob)
+                    .then((bitmap) => {
+                        // The playhead may have moved on while this frame was decoding
+                        const now = Math.round(displayFrameRef.current);
+                        if (unmounted || Math.abs(frame - now) > DECODE_KEEP) bitmap.close();
+                        else bitmaps.set(frame, bitmap);
+                    })
+                    .catch(() => {})
+                    .finally(() => decoding.delete(frame));
+            }
+        };
+
+        const nearestBitmap = (frame) => {
+            for (let d = 1; d <= DECODE_KEEP; d++) {
+                const bitmap = bitmaps.get(frame - d) ?? bitmaps.get(frame + d);
+                if (bitmap) return bitmap;
+            }
+            return null;
+        };
+
+        const loop = (now) => {
+            // Clamp the step so returning to a background tab doesn't teleport the scene
+            const dt = Math.min(now - lastTime, 100);
+            lastTime = now;
+
             if (!isIntroPlayingRef.current) {
                 const diff = targetFrameRef.current - displayFrameRef.current;
                 displayFrameRef.current = Math.abs(diff) > 0.01
-                    ? displayFrameRef.current + diff * FRAME_LERP
+                    ? displayFrameRef.current + diff * (1 - Math.exp(-dt / FRAME_SMOOTHING_MS))
                     : targetFrameRef.current;
             }
 
-            const frameIndex = clamp(Math.round(displayFrameRef.current), 1, TOTAL_FRAMES);
-            const img = imagesRef.current[frameIndex - 1];
-            if (isReady(img) && lastDrawnRef.current !== frameIndex) {
-                renderFrame(img);
-                lastDrawnRef.current = frameIndex;
+            const pos = clamp(displayFrameRef.current, 1, TOTAL_FRAMES);
+            const travel = targetFrameRef.current - pos;
+            if (Math.abs(travel) > 0.5) direction = Math.sign(travel);
+            syncDecodeWindow(pos);
+
+            const base = Math.floor(pos);
+            const blend = Math.round((pos - base) * BLEND_STEPS) / BLEND_STEPS;
+            const from = bitmaps.get(base);
+            const to = blend > 0 ? bitmaps.get(base + 1) : undefined;
+            // Frame not decoded yet: show the closest one we have rather than stalling
+            const [bottom, top, alpha] = from && to
+                ? [from, to, blend]
+                : [from ?? to ?? nearestBitmap(Math.round(pos)), null, 0];
+
+            const drawn = drawnRef.current;
+            if (bottom && (!drawn || drawn.bottom !== bottom || drawn.top !== top || drawn.alpha !== alpha)) {
+                renderFrame(bottom, top, alpha);
+                drawnRef.current = { bottom, top, alpha };
             }
-            // Frame not downloaded yet: keep showing the last painted one
-            setCurrentFrame(frameIndex);
+            setCurrentFrame(Math.round(pos));
 
             rafIdRef.current = requestAnimationFrame(loop);
         };
         rafIdRef.current = requestAnimationFrame(loop);
 
-        // Resizing clears the canvas, so repaint the last drawn frame
+        // Resizing changes the canvas size, so force a repaint on the next tick
         const handleResize = () => {
             setViewport({ w: window.innerWidth, h: window.innerHeight });
-            const img = imagesRef.current[lastDrawnRef.current - 1];
-            if (isReady(img)) renderFrame(img);
+            drawnRef.current = null;
         };
         window.addEventListener('resize', handleResize);
 
         return () => {
+            unmounted = true;
             cancelAnimationFrame(rafIdRef.current);
             cancelAnimationFrame(introRafIdRef.current);
             window.removeEventListener('resize', handleResize);
+            bitmaps.forEach((bitmap) => bitmap.close());
+            bitmaps.clear();
+            drawnRef.current = null;
         };
     }, [renderFrame]);
 
