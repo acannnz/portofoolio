@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, useReducedMotion } from 'framer-motion';
 import useTypewriter from '../hooks/useTypewriter';
 import IdentityPhase from './Scrolly/IdentityPhase';
-import IdleLoop, { IDLE_FADE_OUT_MS } from './Scrolly/IdleLoop';
+import IdleLoop, { IDLE_FADE_OUT_MS, preloadIdleClip } from './Scrolly/IdleLoop';
 import ProjectsPhase from './Scrolly/ProjectsPhase';
 import SkillsPhase from './Scrolly/SkillsPhase';
 import SummonScreen from './Scrolly/SummonScreen';
@@ -29,8 +29,9 @@ const PLAYBACK_DECEL = 45;
 const GESTURE_GAP_MS = 180;
 // Once the scene rests and scrolling has stopped this long, the page scroll is realigned to the scene
 const REALIGN_IDLE_MS = 250;
-// The idle loop fades in once the scene has rested on a rest frame this long
-const IDLE_DELAY_MS = 300;
+// The idle loop takes over once the scene has rested on a rest frame this long (its first frame matches
+// the still, so this only skips momentary stops)
+const IDLE_DELAY_MS = 100;
 const INTRO_DURATION_MS = 1500;
 // Frames after the intro start downloading at the latest this long after page load
 const REST_PRELOAD_DELAY_MS = 3000;
@@ -154,6 +155,8 @@ export default function ScrollyExperience({ profile }) {
                 if (!unmounted) setIntroLoaded(settled);
             });
         }
+        // The landing's idle clip is queued right behind the intro frames, ahead of the rest of the sequence
+        preloadIdleClip(FRAME_INTRO_END, 'high');
         const timer = setTimeout(startRestLoading, REST_PRELOAD_DELAY_MS);
         return () => {
             unmounted = true;

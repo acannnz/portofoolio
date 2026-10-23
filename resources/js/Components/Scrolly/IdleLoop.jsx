@@ -1,11 +1,34 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { idleLoopUrl } from './constants';
 
 // Clips open on the exact rest frame and play an intro up to LOOP_START_S once; after that they loop from
 // there, as each clip's tail is crossfaded into that moment (see idle-loops/README.md)
 const LOOP_START_S = 1.5;
-const FADE_IN_MS = 500;
+// The clip's first frame matches the still rest frame, so it can fade in quickly
+const FADE_IN_MS = 300;
 export const IDLE_FADE_OUT_MS = 350;
+
+// Clips are fetched whole into blob URLs: seeking back to LOOP_START_S then works on any host (even one
+// without HTTP range support) and replays never touch the network. Kept for the whole visit, so coming back
+// to the page reuses them. rest frame -> { promise, url (once loaded) }
+const clips = new Map();
+
+/** Starts downloading the idle clip for `rest` (once). `priority` is a fetch priority hint. */
+export function preloadIdleClip(rest, priority = 'low') {
+    if (!clips.has(rest)) {
+        const entry = { url: null };
+        entry.promise = fetch(idleLoopUrl(rest), { priority })
+            .then((res) => (res.ok ? res.blob() : Promise.reject(new Error(res.statusText))))
+            .then((blob) => {
+                entry.url = URL.createObjectURL(blob);
+                return entry.url;
+            })
+            // A failed download may be retried the next time the scene rests there
+            .catch(() => clips.delete(rest));
+        clips.set(rest, entry);
+    }
+    return clips.get(rest).promise;
+}
 
 // While the scene rests on `frame`, fades its looping clip in over the canvas so the city keeps moving
 // (flying cars, neon). `frame` is null while the scene travels, which fades the clip back out.
@@ -13,30 +36,6 @@ export const IDLE_FADE_OUT_MS = 350;
 export default function IdleLoop({ frame, rests }) {
     const videoRef = useRef(null);
     const [visible, setVisible] = useState(false);
-    // Clips are fetched whole into blob URLs: seeking back to LOOP_START_S then works on any host (even one
-    // without HTTP range support) and the loop never stalls on the network. rest frame -> Promise<blob URL>
-    const clipsRef = useRef(new Map());
-
-    const loadClip = useCallback((rest) => {
-        const clips = clipsRef.current;
-        if (!clips.has(rest)) {
-            const clip = fetch(idleLoopUrl(rest))
-                .then((res) => (res.ok ? res.blob() : Promise.reject(new Error(res.statusText))))
-                .then((blob) => URL.createObjectURL(blob));
-            // A failed fetch may be retried the next time the scene rests there
-            clip.catch(() => clips.delete(rest));
-            clips.set(rest, clip);
-        }
-        return clips.get(rest);
-    }, []);
-
-    useEffect(() => {
-        const clips = clipsRef.current;
-        return () => {
-            clips.forEach((clip) => clip.then(URL.revokeObjectURL, () => {}));
-            clips.clear();
-        };
-    }, []);
 
     // Loops back to LOOP_START_S just before the end, so the wrap lands on the matching frame without a stall
     useEffect(() => {
@@ -71,29 +70,24 @@ export default function IdleLoop({ frame, rests }) {
             return () => clearTimeout(timer);
         }
 
-        // Only shown once it's actually playing, so a slow or missing clip leaves the still frame in place
-        let cancelled = false;
+        // Plays the downloaded clip when it's ready, otherwise streams it straight away rather than waiting
+        // for the whole file. Only shown once it's actually playing, so the still frame covers any wait.
+        preloadIdleClip(frame, 'high');
+        const src = clips.get(frame)?.url ?? idleLoopUrl(frame);
         const show = () => setVisible(true);
+        video.addEventListener('playing', show, { once: true });
         video.pause();
-        loadClip(frame)
-            .then((url) => {
-                if (cancelled) return;
-                video.addEventListener('playing', show, { once: true });
-                if (video.src !== url) video.src = url;
-                video.currentTime = 0;
-                video.muted = true;
-                video.play().catch(() => {});
+        if (video.getAttribute('src') !== src) video.src = src;
+        video.currentTime = 0;
+        video.muted = true;
+        video.play().catch(() => {});
 
-                // Fetch the neighbouring rests' clips, so the next stop in either direction is ready
-                const idx = rests.indexOf(frame);
-                [rests[idx - 1], rests[idx + 1]].forEach((rest) => rest !== undefined && loadClip(rest).catch(() => {}));
-            })
-            .catch(() => {});
-        return () => {
-            cancelled = true;
-            video.removeEventListener('playing', show);
-        };
-    }, [frame, rests, loadClip]);
+        // Fetch the neighbouring rests' clips, so the next stop in either direction is ready
+        const idx = rests.indexOf(frame);
+        [rests[idx - 1], rests[idx + 1]].forEach((rest) => rest !== undefined && preloadIdleClip(rest));
+
+        return () => video.removeEventListener('playing', show);
+    }, [frame, rests]);
 
     return (
         <video
@@ -102,7 +96,7 @@ export default function IdleLoop({ frame, rests }) {
             muted
             playsInline
             disablePictureInPicture
-            preload="none"
+            preload="auto"
             style={{ transitionDuration: `${visible ? FADE_IN_MS : IDLE_FADE_OUT_MS}ms` }}
             className={`absolute inset-0 w-full h-full object-cover z-0 pointer-events-none transition-opacity ease-in-out ${
                 visible ? 'opacity-100' : 'opacity-0'
