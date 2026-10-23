@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { ChevronDown, Shield } from 'lucide-react';
 import { MobileProjectCard, ShardDetail } from './ProjectShard';
 import ShardManifest from './ShardManifest';
-import { FRAME_STANDING_END, TOTAL_FRAMES, clamp } from './constants';
+import { FRAME_STANDING_END, TOTAL_FRAMES, clamp, shardCenterFrame } from './constants';
 
 // Last frames: armor detaches into floating shards, one per project. The frame range is split into
 // one segment per project, so scrolling scans through them; the manifest seeks to a segment.
@@ -14,7 +14,7 @@ export default function ProjectsPhase({ projects, frame, onSeekFrame }) {
     const active = clamp(Math.floor(position), 0, Math.max(count - 1, 0));
     const progress = clamp(position - active, 0, 1);
 
-    const selectShard = (idx) => onSeekFrame(FRAME_STANDING_END + span * (idx + 0.5));
+    const selectShard = (idx) => onSeekFrame(shardCenterFrame(idx, count));
 
     return (
         <motion.div

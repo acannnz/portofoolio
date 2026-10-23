@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, useReducedMotion } from 'framer-motion';
 import useTypewriter from '../hooks/useTypewriter';
 import IdentityPhase from './Scrolly/IdentityPhase';
@@ -12,12 +12,22 @@ import {
     clamp,
     coverTransform,
     getPhase,
+    restFrames,
 } from './Scrolly/constants';
 
 const frameUrl = (index) => `/frames/frame_${String(index).padStart(3, '0')}.webp`;
 
-// Time constant of the ease towards the scroll-driven target frame (higher = floatier, independent of refresh rate)
-const FRAME_SMOOTHING_MS = 120;
+// Scrolling doesn't scrub frame by frame: each scroll gesture plays the footage on to the next rest frame.
+// Cruise speed is the footage's natural pace; long jumps speed up so no trip takes longer than MAX_TRAVEL_S.
+const PLAYBACK_FPS = 30;
+const MAX_TRAVEL_S = 2.5;
+// Ramp up / ease into the rest frame, in frames per second²
+const PLAYBACK_ACCEL = 90;
+const PLAYBACK_DECEL = 45;
+// Scroll events further apart than this (or reversing direction) start a new gesture
+const GESTURE_GAP_MS = 180;
+// Once the scene rests and scrolling has stopped this long, the page scroll is realigned to the scene
+const REALIGN_IDLE_MS = 250;
 const INTRO_DURATION_MS = 1500;
 // Frames after the intro start downloading at the latest this long after page load
 const REST_PRELOAD_DELAY_MS = 3000;
@@ -29,8 +39,14 @@ const DECODE_KEEP = 24;
 // Crossfade between neighbouring frames is quantized so an idle scene stops repainting
 const BLEND_STEPS = 32;
 
+const nextRest = (rests, frame) => rests.find((rest) => rest > frame + 0.5) ?? rests[rests.length - 1];
+const prevRest = (rests, frame) => rests.findLast((rest) => rest < frame - 0.5) ?? rests[0];
+
 export default function ScrollyExperience({ profile }) {
     const reduceMotion = useReducedMotion();
+    const reduceMotionRef = useRef(reduceMotion);
+    reduceMotionRef.current = reduceMotion;
+    const rests = useMemo(() => restFrames(profile.projects.length), [profile.projects.length]);
 
     const containerRef = useRef(null);
     const canvasRef = useRef(null);
@@ -50,6 +66,11 @@ export default function ScrollyExperience({ profile }) {
     const displayFrameRef = useRef(1);
     const targetFrameRef = useRef(1);
     const isIntroPlayingRef = useRef(false);
+    // Scroll gesture tracking: the scroll position (as a frame) last seen, when, and which way
+    const lastScrollFrameRef = useRef(FRAME_INTRO_END);
+    const lastScrollTimeRef = useRef(0);
+    const gestureDirRef = useRef(0);
+    const scrollAlignedRef = useRef(true);
     const rafIdRef = useRef(null);
     const introRafIdRef = useRef(null);
 
@@ -132,12 +153,38 @@ export default function ScrollyExperience({ profile }) {
         };
     }, [loadFrame, startRestLoading]);
 
-    // ---- Render loop: ease towards the target frame, crossfade neighbours, repaint only on change ----
+    // ---- Scroll position <-> frame (the scrollable range covers frames INTRO_END..TOTAL_FRAMES) ----
+    const scrollFrame = useCallback(() => {
+        const container = containerRef.current;
+        if (!container) return null;
+        const scrollable = container.scrollHeight - window.innerHeight;
+        if (scrollable <= 0) return null;
+
+        const progress = clamp(-container.getBoundingClientRect().top / scrollable, 0, 1);
+        return FRAME_INTRO_END + progress * (TOTAL_FRAMES - FRAME_INTRO_END);
+    }, []);
+
+    // Jumps the page to where `frame` sits, without the scroll handler reading it as a new gesture
+    const alignScrollTo = useCallback((frame) => {
+        const container = containerRef.current;
+        if (!container) return;
+        const scrollable = container.scrollHeight - window.innerHeight;
+        const progress = (frame - FRAME_INTRO_END) / (TOTAL_FRAMES - FRAME_INTRO_END);
+        lastScrollFrameRef.current = frame;
+        scrollAlignedRef.current = true;
+        window.scrollTo({
+            top: container.getBoundingClientRect().top + window.scrollY + progress * scrollable,
+            behavior: 'instant',
+        });
+    }, []);
+
+    // ---- Render loop: play towards the target frame, crossfade neighbours, repaint only on change ----
     useEffect(() => {
         const bitmaps = bitmapsRef.current;
         const decoding = decodingRef.current;
         let unmounted = false;
         let direction = 1;
+        let velocity = 0; // frames per second
         let lastTime = performance.now();
 
         // Keeps decoded bitmaps in a window around the playhead, biased towards the direction of travel
@@ -184,10 +231,34 @@ export default function ScrollyExperience({ profile }) {
             lastTime = now;
 
             if (!isIntroPlayingRef.current) {
-                const diff = targetFrameRef.current - displayFrameRef.current;
-                displayFrameRef.current = Math.abs(diff) > 0.01
-                    ? displayFrameRef.current + diff * (1 - Math.exp(-dt / FRAME_SMOOTHING_MS))
-                    : targetFrameRef.current;
+                const target = targetFrameRef.current;
+                const diff = target - displayFrameRef.current;
+                const dist = Math.abs(diff);
+                if (reduceMotionRef.current || (dist < 0.02 && Math.abs(velocity) < 2)) {
+                    displayFrameRef.current = target;
+                    velocity = 0;
+                } else {
+                    // Play at (at least) the footage's own pace, braking so it settles on the rest frame
+                    const cruise = Math.max(PLAYBACK_FPS, dist / MAX_TRAVEL_S);
+                    const desired = Math.sign(diff) * Math.min(cruise, Math.sqrt(2 * PLAYBACK_DECEL * dist));
+                    const maxChange = (PLAYBACK_ACCEL * dt) / 1000;
+                    velocity += clamp(desired - velocity, -maxChange, maxChange);
+                    displayFrameRef.current += (velocity * dt) / 1000;
+                    if (Math.sign(target - displayFrameRef.current) !== Math.sign(diff)) {
+                        displayFrameRef.current = target;
+                        velocity = 0;
+                    }
+                }
+
+                // At rest after scrolling stopped: bring the page scroll back in line with the scene, so the
+                // next gesture starts from where the viewer actually is. Skipped at the very top / bottom.
+                if (velocity === 0 && !scrollAlignedRef.current && now - lastScrollTimeRef.current > REALIGN_IDLE_MS) {
+                    scrollAlignedRef.current = true;
+                    const at = scrollFrame();
+                    if (at !== null && at > FRAME_INTRO_END && at < TOTAL_FRAMES && Math.abs(at - target) > 0.5) {
+                        alignScrollTo(target);
+                    }
+                }
             }
 
             const pos = clamp(displayFrameRef.current, 1, TOTAL_FRAMES);
@@ -231,41 +302,55 @@ export default function ScrollyExperience({ profile }) {
             bitmaps.clear();
             drawnRef.current = null;
         };
-    }, [renderFrame]);
+    }, [renderFrame, scrollFrame, alignScrollTo]);
 
-    // ---- Scroll -> target frame (frames INTRO_END..TOTAL_FRAMES) ----
-    const syncTargetToScroll = useCallback(() => {
-        const container = containerRef.current;
-        if (!container) return;
-        const scrollable = container.scrollHeight - window.innerHeight;
-        if (scrollable <= 0) return;
-
-        const progress = clamp(-container.getBoundingClientRect().top / scrollable, 0, 1);
-        targetFrameRef.current = FRAME_INTRO_END + progress * (TOTAL_FRAMES - FRAME_INTRO_END);
-    }, []);
-
+    // ---- Scroll gestures -> target rest frame ----
     useEffect(() => {
         if (!isSummoned) return undefined;
 
         const handleScroll = () => {
-            if (!isIntroPlayingRef.current) syncTargetToScroll();
+            if (isIntroPlayingRef.current) return;
+            const at = scrollFrame();
+            if (at === null) return;
+            // Tiny moves (sub-pixel realignment noise, a trackpad's first pixels) accumulate until they count
+            const delta = at - lastScrollFrameRef.current;
+            if (Math.abs(delta) < 0.1) return;
+            lastScrollFrameRef.current = at;
+            scrollAlignedRef.current = false;
+
+            if (reduceMotionRef.current) {
+                targetFrameRef.current = at;
+                return;
+            }
+
+            const now = performance.now();
+            const dir = Math.sign(delta);
+            if (now - lastScrollTimeRef.current > GESTURE_GAP_MS || dir !== gestureDirRef.current) {
+                // A new gesture plays on to the next rest frame. While the scene is still travelling that way,
+                // it queues one more stop after the current target instead.
+                const display = displayFrameRef.current;
+                const target = targetFrameRef.current;
+                const from = Math.sign(target - display) === dir ? target : display;
+                targetFrameRef.current = dir > 0 ? nextRest(rests, from) : prevRest(rests, from);
+            }
+            // A long fling carries the scene at least as far as the page itself scrolled
+            targetFrameRef.current = dir > 0
+                ? Math.max(targetFrameRef.current, nextRest(rests, at - 1))
+                : Math.min(targetFrameRef.current, prevRest(rests, at + 1));
+            lastScrollTimeRef.current = now;
+            gestureDirRef.current = dir;
         };
         window.addEventListener('scroll', handleScroll, { passive: true });
-        handleScroll();
         return () => window.removeEventListener('scroll', handleScroll);
-    }, [isSummoned, syncTargetToScroll]);
+    }, [isSummoned, scrollFrame, rests]);
 
-    // Scrolls the page so the scene lands on `frame` (inverse of syncTargetToScroll)
+    // Plays the scene to `frame` and moves the page along with it
     const seekToFrame = useCallback(
         (frame) => {
-            const container = containerRef.current;
-            if (!container) return;
-            const scrollable = container.scrollHeight - window.innerHeight;
-            const progress = (frame - FRAME_INTRO_END) / (TOTAL_FRAMES - FRAME_INTRO_END);
-            const top = container.getBoundingClientRect().top + window.scrollY + progress * scrollable;
-            window.scrollTo({ top, behavior: reduceMotion ? 'auto' : 'smooth' });
+            targetFrameRef.current = frame;
+            alignScrollTo(frame);
         },
-        [reduceMotion],
+        [alignScrollTo],
     );
 
     // ---- Summon: wait for the intro frames, then auto-play 1 -> INTRO_END ----
@@ -291,10 +376,10 @@ export default function ScrollyExperience({ profile }) {
             displayFrameRef.current = FRAME_INTRO_END;
             isIntroPlayingRef.current = false;
             setIsIntroPlaying(false);
-            syncTargetToScroll();
+            lastScrollFrameRef.current = scrollFrame() ?? FRAME_INTRO_END;
         };
         introRafIdRef.current = requestAnimationFrame(animateIntro);
-    }, [reduceMotion, syncTargetToScroll]);
+    }, [reduceMotion, scrollFrame]);
 
     const handleStartSummon = () => {
         if (isLoading || isSummoned) return;

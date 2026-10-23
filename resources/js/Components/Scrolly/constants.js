@@ -26,6 +26,18 @@ export const ICONS = { Server, Code2, Database, Zap, Network, Terminal, Layers }
 
 export const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
+/** The armor-detachment frames are split into one equal segment per project; returns segment `idx`'s center. */
+export function shardCenterFrame(idx, count) {
+    const span = (TOTAL_FRAMES - FRAME_STANDING_END) / Math.max(count, 1);
+    return FRAME_STANDING_END + span * (idx + 0.5);
+}
+
+/** Frames the scene comes to rest on: landing (identity), standing (skills), then each project shard. */
+export function restFrames(projectCount) {
+    const shards = Array.from({ length: projectCount }, (_, idx) => shardCenterFrame(idx, projectCount));
+    return [FRAME_INTRO_END, FRAME_STANDING_CENTER, ...shards];
+}
+
 // ---- Image <-> viewport mapping (canvas draws the frame with object-fit: cover) ----
 export const IMAGE_SIZE = { w: 1280, h: 720 };
 
