@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, useReducedMotion } from 'framer-motion';
 import useTypewriter from '../hooks/useTypewriter';
 import IdentityPhase from './Scrolly/IdentityPhase';
+import IdleLoop from './Scrolly/IdleLoop';
 import ProjectsPhase from './Scrolly/ProjectsPhase';
 import SkillsPhase from './Scrolly/SkillsPhase';
 import SummonScreen from './Scrolly/SummonScreen';
@@ -28,6 +29,8 @@ const PLAYBACK_DECEL = 45;
 const GESTURE_GAP_MS = 180;
 // Once the scene rests and scrolling has stopped this long, the page scroll is realigned to the scene
 const REALIGN_IDLE_MS = 250;
+// The idle loop fades in once the scene has rested on a rest frame this long
+const IDLE_DELAY_MS = 300;
 const INTRO_DURATION_MS = 1500;
 // Frames after the intro start downloading at the latest this long after page load
 const REST_PRELOAD_DELAY_MS = 3000;
@@ -47,6 +50,8 @@ export default function ScrollyExperience({ profile }) {
     const reduceMotionRef = useRef(reduceMotion);
     reduceMotionRef.current = reduceMotion;
     const rests = useMemo(() => restFrames(profile.projects.length), [profile.projects.length]);
+    const restsRef = useRef(rests);
+    restsRef.current = rests;
 
     const containerRef = useRef(null);
     const canvasRef = useRef(null);
@@ -71,6 +76,7 @@ export default function ScrollyExperience({ profile }) {
     const lastScrollTimeRef = useRef(0);
     const gestureDirRef = useRef(0);
     const scrollAlignedRef = useRef(true);
+    const idleFrameRef = useRef(null);
     const rafIdRef = useRef(null);
     const introRafIdRef = useRef(null);
 
@@ -79,6 +85,8 @@ export default function ScrollyExperience({ profile }) {
     const [isSummoned, setIsSummoned] = useState(false);
     const [isIntroPlaying, setIsIntroPlaying] = useState(false);
     const [currentFrame, setCurrentFrame] = useState(1);
+    // Rest frame whose idle loop is showing, or null while the scene travels
+    const [idleFrame, setIdleFrame] = useState(null);
     // Needed so HUD overlays can map image coordinates through the same cover crop as the canvas
     const [viewport, setViewport] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
 
@@ -185,6 +193,7 @@ export default function ScrollyExperience({ profile }) {
         let unmounted = false;
         let direction = 1;
         let velocity = 0; // frames per second
+        let restingSince = null;
         let lastTime = performance.now();
 
         // Keeps decoded bitmaps in a window around the playhead, biased towards the direction of travel
@@ -259,6 +268,16 @@ export default function ScrollyExperience({ profile }) {
                         alignScrollTo(target);
                     }
                 }
+            }
+
+            // Resting on a rest frame for a moment hands the scene over to that frame's idle loop
+            const restFrame = !isIntroPlayingRef.current && !reduceMotionRef.current && velocity === 0
+                && restsRef.current.includes(displayFrameRef.current) ? displayFrameRef.current : null;
+            restingSince = restFrame === null ? null : restingSince ?? now;
+            const idle = restingSince !== null && now - restingSince > IDLE_DELAY_MS ? restFrame : null;
+            if (idle !== idleFrameRef.current) {
+                idleFrameRef.current = idle;
+                setIdleFrame(idle);
             }
 
             const pos = clamp(displayFrameRef.current, 1, TOTAL_FRAMES);
@@ -415,6 +434,9 @@ export default function ScrollyExperience({ profile }) {
                         isSummoned ? 'opacity-100' : 'opacity-0 pointer-events-none'
                     }`}
                 />
+
+                {/* Looping clip of the resting scene keeps the city moving between scrolls */}
+                <IdleLoop frame={idleFrame} />
 
                 {/* Scene 0: Summon button / loading */}
                 <AnimatePresence>

@@ -41,6 +41,9 @@ export function restFrames(projectCount) {
     return [FRAME_INTRO_END, FRAME_STANDING_CENTER, ...shards];
 }
 
+/** Looping clip of the scene resting on `frame` (public/idle/rest_NNN.mp4, see idle-loops/README.md). */
+export const idleLoopUrl = (frame) => `/idle/rest_${String(frame).padStart(3, '0')}.mp4`;
+
 // ---- Image <-> viewport mapping (canvas draws the frame with object-fit: cover) ----
 export const IMAGE_SIZE = { w: 1280, h: 720 };
 
