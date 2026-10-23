@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, useReducedMotion } from 'framer-motion';
 import useTypewriter from '../hooks/useTypewriter';
 import IdentityPhase from './Scrolly/IdentityPhase';
-import IdleLoop, { IDLE_FADE_OUT_MS, preloadIdleClip } from './Scrolly/IdleLoop';
+import IdleLoop, { IDLE_FADE_OUT_MS, idleClipsAllowed, preloadIdleClip } from './Scrolly/IdleLoop';
 import ProjectsPhase from './Scrolly/ProjectsPhase';
 import SkillsPhase from './Scrolly/SkillsPhase';
 import SummonScreen from './Scrolly/SummonScreen';
@@ -35,6 +35,10 @@ const IDLE_DELAY_MS = 100;
 const INTRO_DURATION_MS = 1500;
 // Frames after the intro start downloading at the latest this long after page load
 const REST_PRELOAD_DELAY_MS = 3000;
+// They download through a queue this many at a time, so a more urgent request can still get through
+const REST_CONCURRENCY = 6;
+// On Summon, the frame queue pauses (at most this long) so the landing's idle clip downloads first
+const LANDING_CLIP_HEADSTART_MS = 2000;
 // Decoded bitmaps are kept only around the playhead (each 1280x720 frame is ~3.7 MB decoded):
 // decode this many frames ahead / behind in the direction of travel, release beyond KEEP.
 const DECODE_AHEAD = 20;
@@ -50,6 +54,9 @@ export default function ScrollyExperience({ profile }) {
     const reduceMotion = useReducedMotion();
     const reduceMotionRef = useRef(reduceMotion);
     reduceMotionRef.current = reduceMotion;
+    // Decided once per visit: idle clips are skipped on Data Saver / slow connections
+    const [idleClips] = useState(idleClipsAllowed);
+    const idleClipsRef = useRef(idleClips);
     const rests = useMemo(() => restFrames(profile.projects.length), [profile.projects.length]);
     const restsRef = useRef(rests);
     restsRef.current = rests;
@@ -67,6 +74,8 @@ export default function ScrollyExperience({ profile }) {
     // `drawnRef` avoids repainting the canvas when the frame and blend did not change
     const drawnRef = useRef(null);
     const restStartedRef = useRef(false);
+    // While set, the rest-frame queue waits for this promise before starting another frame
+    const restHoldRef = useRef(null);
 
     // Animation state lives in refs so the rAF loop never re-subscribes
     const displayFrameRef = useRef(1);
@@ -143,7 +152,13 @@ export default function ScrollyExperience({ profile }) {
     const startRestLoading = useCallback(() => {
         if (restStartedRef.current) return;
         restStartedRef.current = true;
-        for (let i = FRAME_INTRO_END + 1; i <= TOTAL_FRAMES; i++) loadFrame(i);
+        let next = FRAME_INTRO_END + 1;
+        const loadNext = async () => {
+            await restHoldRef.current;
+            if (next > TOTAL_FRAMES) return;
+            loadFrame(next++, loadNext);
+        };
+        for (let i = 0; i < REST_CONCURRENCY; i++) loadNext();
     }, [loadFrame]);
 
     useEffect(() => {
@@ -155,8 +170,6 @@ export default function ScrollyExperience({ profile }) {
                 if (!unmounted) setIntroLoaded(settled);
             });
         }
-        // The landing's idle clip is queued right behind the intro frames, ahead of the rest of the sequence
-        preloadIdleClip(FRAME_INTRO_END, 'high');
         const timer = setTimeout(startRestLoading, REST_PRELOAD_DELAY_MS);
         return () => {
             unmounted = true;
@@ -246,7 +259,7 @@ export default function ScrollyExperience({ profile }) {
 
             // Resting on a rest frame for a moment hands the scene over to that frame's idle loop. Leaving it
             // first dissolves the clip back into the still rest frame, so it never blends into a moving scene.
-            const restFrame = !isIntroPlayingRef.current && !reduceMotionRef.current && velocity === 0
+            const restFrame = idleClipsRef.current && !isIntroPlayingRef.current && !reduceMotionRef.current && velocity === 0
                 && targetFrameRef.current === displayFrameRef.current
                 && restsRef.current.includes(displayFrameRef.current) ? displayFrameRef.current : null;
             restingSince = restFrame === null ? null : restingSince ?? now;
@@ -411,6 +424,16 @@ export default function ScrollyExperience({ profile }) {
     const handleStartSummon = () => {
         if (isLoading || isSummoned) return;
         window.scrollTo({ top: 0, behavior: 'instant' });
+        // Only now, once the visitor is in: the landing's idle clip downloads first, so it's ready as the
+        // descent lands. The rest of the sequence isn't needed during the intro, so its queue pauses meanwhile.
+        if (idleClips) {
+            restHoldRef.current = Promise.race([
+                preloadIdleClip(FRAME_INTRO_END, 'high'),
+                new Promise((resolve) => setTimeout(resolve, LANDING_CLIP_HEADSTART_MS)),
+            ]).then(() => {
+                restHoldRef.current = null;
+            });
+        }
         startRestLoading();
         setIsLoading(true);
     };

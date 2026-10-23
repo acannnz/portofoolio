@@ -13,6 +13,15 @@ export const IDLE_FADE_OUT_MS = 350;
 // to the page reuses them. rest frame -> { promise, url (once loaded) }
 const clips = new Map();
 
+/**
+ * Idle clips are a nice-to-have of ~2 MB each: skipped when the visitor asked to save data or is on a slow
+ * connection, where the still rest frame stays on screen instead.
+ */
+export function idleClipsAllowed() {
+    const connection = navigator.connection;
+    return !connection?.saveData && !['slow-2g', '2g', '3g'].includes(connection?.effectiveType);
+}
+
 /** Starts downloading the idle clip for `rest` (once). `priority` is a fetch priority hint. */
 export function preloadIdleClip(rest, priority = 'low') {
     if (!clips.has(rest)) {
@@ -70,23 +79,28 @@ export default function IdleLoop({ frame, rests }) {
             return () => clearTimeout(timer);
         }
 
-        // Plays the downloaded clip when it's ready, otherwise streams it straight away rather than waiting
-        // for the whole file. Only shown once it's actually playing, so the still frame covers any wait.
-        preloadIdleClip(frame, 'high');
-        const src = clips.get(frame)?.url ?? idleLoopUrl(frame);
+        // Waits for the single download (usually already done: clips are fetched ahead), so nothing is ever
+        // downloaded twice. Only shown once it's actually playing, so the still frame covers any wait.
+        let cancelled = false;
         const show = () => setVisible(true);
-        video.addEventListener('playing', show, { once: true });
         video.pause();
-        if (video.getAttribute('src') !== src) video.src = src;
-        video.currentTime = 0;
-        video.muted = true;
-        video.play().catch(() => {});
+        preloadIdleClip(frame, 'high').then((src) => {
+            if (cancelled || typeof src !== 'string') return;
+            video.addEventListener('playing', show, { once: true });
+            if (video.src !== src) video.src = src;
+            video.currentTime = 0;
+            video.muted = true;
+            video.play().catch(() => {});
+        });
 
         // Fetch the neighbouring rests' clips, so the next stop in either direction is ready
         const idx = rests.indexOf(frame);
         [rests[idx - 1], rests[idx + 1]].forEach((rest) => rest !== undefined && preloadIdleClip(rest));
 
-        return () => video.removeEventListener('playing', show);
+        return () => {
+            cancelled = true;
+            video.removeEventListener('playing', show);
+        };
     }, [frame, rests]);
 
     return (

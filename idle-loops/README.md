@@ -88,7 +88,7 @@ terakhirnya di-crossfade ke detik 0–1,5. Jadi akhir klip sama dengan detik 1,5
 detik 1,5 (bukan 0). Loop-nya nyambung walaupun gambar akhir dari AI tidak sama dengan gambar awal:
 
 ```bash
-ffmpeg -i idle-loops/rest_116_skills.mp4 -filter_complex "[0:v]fps=24,split=3[a][b][c];[a]trim=0:1.5,setpts=PTS-STARTPTS,fps=24[head];[b]trim=start=1.5,setpts=PTS-STARTPTS,fps=24[body];[c]trim=0:1.5,setpts=PTS-STARTPTS,fps=24[tail];[body][tail]xfade=transition=fade:duration=1.5:offset=7[loop];[head][loop]concat=n=2:v=1:a=0,format=yuv420p[out]" -map "[out]" -an -c:v libx264 -preset slow -crf 27 -g 48 -force_key_frames "0,1.5" -movflags +faststart public/idle/rest_116.mp4
+ffmpeg -i idle-loops/rest_116_skills.mp4 -filter_complex "[0:v]fps=24,split=3[a][b][c];[a]trim=0:1.5,setpts=PTS-STARTPTS,fps=24[head];[b]trim=start=1.5,setpts=PTS-STARTPTS,fps=24[body];[c]trim=0:1.5,setpts=PTS-STARTPTS,fps=24[tail];[body][tail]xfade=transition=fade:duration=1.5:offset=7[loop];[head][loop]concat=n=2:v=1:a=0,format=yuv420p[out]" -map "[out]" -an -c:v libx264 -preset slow -crf 30 -g 48 -force_key_frames "0,1.5" -movflags +faststart public/idle/rest_116.mp4
 ```
 
 `offset` = durasi klip − 3 (untuk klip 10 detik: 7). Website memutar klip ini lewat
