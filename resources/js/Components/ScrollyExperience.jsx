@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, useReducedMotion } from 'framer-motion';
 import useTypewriter from '../hooks/useTypewriter';
+import CityBackdrop, { supportsWebGL } from './Scrolly/CityBackdrop';
 import IdentityPhase from './Scrolly/IdentityPhase';
-import IdleLoop, { IDLE_FADE_OUT_MS, idleClipsAllowed, preloadIdleClip } from './Scrolly/IdleLoop';
 import ProjectsPhase from './Scrolly/ProjectsPhase';
 import SkillsPhase from './Scrolly/SkillsPhase';
 import SummonScreen from './Scrolly/SummonScreen';
@@ -16,7 +16,8 @@ import {
     restFrames,
 } from './Scrolly/constants';
 
-const frameUrl = (index) => `/frames/frame_${String(index).padStart(3, '0')}.webp`;
+// public/pilot holds the frames with the city cut away (drawn over CityBackdrop), public/frames the originals
+const frameUrl = (index, cutout) => `/${cutout ? 'pilot' : 'frames'}/frame_${String(index).padStart(3, '0')}.webp`;
 
 // Scrolling doesn't scrub frame by frame: each scroll gesture plays the footage on to the next rest frame.
 // Cruise speed is the footage's natural pace; long jumps speed up so no trip takes longer than MAX_TRAVEL_S.
@@ -29,16 +30,11 @@ const PLAYBACK_DECEL = 45;
 const GESTURE_GAP_MS = 180;
 // Once the scene rests and scrolling has stopped this long, the page scroll is realigned to the scene
 const REALIGN_IDLE_MS = 250;
-// The idle loop takes over once the scene has rested on a rest frame this long (its first frame matches
-// the still, so this only skips momentary stops)
-const IDLE_DELAY_MS = 100;
 const INTRO_DURATION_MS = 1500;
 // Frames after the intro start downloading at the latest this long after page load
 const REST_PRELOAD_DELAY_MS = 3000;
-// They download through a queue this many at a time, so a more urgent request can still get through
+// They download through a queue this many at a time, in order, so the frames right after the landing come first
 const REST_CONCURRENCY = 6;
-// On Summon, the frame queue pauses (at most this long) so the landing's idle clip downloads first
-const LANDING_CLIP_HEADSTART_MS = 2000;
 // Decoded bitmaps are kept only around the playhead (each 1280x720 frame is ~3.7 MB decoded):
 // decode this many frames ahead / behind in the direction of travel, release beyond KEEP.
 const DECODE_AHEAD = 20;
@@ -54,12 +50,9 @@ export default function ScrollyExperience({ profile }) {
     const reduceMotion = useReducedMotion();
     const reduceMotionRef = useRef(reduceMotion);
     reduceMotionRef.current = reduceMotion;
-    // Decided once per visit: idle clips are skipped on Data Saver / slow connections
-    const [idleClips] = useState(idleClipsAllowed);
-    const idleClipsRef = useRef(idleClips);
     const rests = useMemo(() => restFrames(profile.projects.length), [profile.projects.length]);
-    const restsRef = useRef(rests);
-    restsRef.current = rests;
+    // Hybrid scene: the pilot cut out of the footage over a live city. Without WebGL, the original frames.
+    const [hybrid] = useState(supportsWebGL);
 
     const containerRef = useRef(null);
     const canvasRef = useRef(null);
@@ -74,8 +67,6 @@ export default function ScrollyExperience({ profile }) {
     // `drawnRef` avoids repainting the canvas when the frame and blend did not change
     const drawnRef = useRef(null);
     const restStartedRef = useRef(false);
-    // While set, the rest-frame queue waits for this promise before starting another frame
-    const restHoldRef = useRef(null);
 
     // Animation state lives in refs so the rAF loop never re-subscribes
     const displayFrameRef = useRef(1);
@@ -86,7 +77,6 @@ export default function ScrollyExperience({ profile }) {
     const lastScrollTimeRef = useRef(0);
     const gestureDirRef = useRef(0);
     const scrollAlignedRef = useRef(true);
-    const idleFrameRef = useRef(null);
     const rafIdRef = useRef(null);
     const introRafIdRef = useRef(null);
 
@@ -95,8 +85,6 @@ export default function ScrollyExperience({ profile }) {
     const [isSummoned, setIsSummoned] = useState(false);
     const [isIntroPlaying, setIsIntroPlaying] = useState(false);
     const [currentFrame, setCurrentFrame] = useState(1);
-    // Rest frame whose idle loop is showing, or null while the scene travels
-    const [idleFrame, setIdleFrame] = useState(null);
     // Needed so HUD overlays can map image coordinates through the same cover crop as the canvas
     const [viewport, setViewport] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
 
@@ -112,8 +100,8 @@ export default function ScrollyExperience({ profile }) {
     const renderFrame = useCallback((bottom, top, alpha) => {
         const canvas = canvasRef.current;
         if (!canvas) return;
-        // Frames always cover the whole canvas, so an opaque context skips clearing and alpha compositing
-        ctxRef.current ??= canvas.getContext('2d', { alpha: false });
+        // Cut-out frames need a transparent canvas over the city; original frames cover it, so it can be opaque
+        ctxRef.current ??= canvas.getContext('2d', { alpha: hybrid });
         const ctx = ctxRef.current;
 
         const dpr = window.devicePixelRatio || 1;
@@ -128,6 +116,7 @@ export default function ScrollyExperience({ profile }) {
         const { drawW, drawH, offX, offY } = coverTransform(width, height);
 
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        if (hybrid) ctx.clearRect(0, 0, width, height);
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
         ctx.globalAlpha = 1;
@@ -136,27 +125,25 @@ export default function ScrollyExperience({ profile }) {
             ctx.globalAlpha = alpha;
             ctx.drawImage(top, offX, offY, drawW, drawH);
         }
-    }, []);
+    }, [hybrid]);
 
     // ---- Frame preloading: intro frames first, the rest in the background ----
     const loadFrame = useCallback(async (index, onSettled) => {
         try {
-            const res = await fetch(frameUrl(index));
+            const res = await fetch(frameUrl(index, hybrid));
             if (res.ok) blobsRef.current[index - 1] = await res.blob();
         } catch {
             // Missing frame: the renderer falls back to the nearest decoded one
         }
         onSettled?.();
-    }, []);
+    }, [hybrid]);
 
     const startRestLoading = useCallback(() => {
         if (restStartedRef.current) return;
         restStartedRef.current = true;
         let next = FRAME_INTRO_END + 1;
-        const loadNext = async () => {
-            await restHoldRef.current;
-            if (next > TOTAL_FRAMES) return;
-            loadFrame(next++, loadNext);
+        const loadNext = () => {
+            if (next <= TOTAL_FRAMES) loadFrame(next++, loadNext);
         };
         for (let i = 0; i < REST_CONCURRENCY; i++) loadNext();
     }, [loadFrame]);
@@ -209,9 +196,6 @@ export default function ScrollyExperience({ profile }) {
         let unmounted = false;
         let direction = 1;
         let velocity = 0; // frames per second
-        let restingSince = null;
-        // The scene holds still until this time while the idle loop dissolves back into the still frame
-        let holdUntil = 0;
         let lastTime = performance.now();
 
         // Keeps decoded bitmaps in a window around the playhead, biased towards the direction of travel
@@ -257,20 +241,7 @@ export default function ScrollyExperience({ profile }) {
             const dt = Math.min(now - lastTime, 100);
             lastTime = now;
 
-            // Resting on a rest frame for a moment hands the scene over to that frame's idle loop. Leaving it
-            // first dissolves the clip back into the still rest frame, so it never blends into a moving scene.
-            const restFrame = idleClipsRef.current && !isIntroPlayingRef.current && !reduceMotionRef.current && velocity === 0
-                && targetFrameRef.current === displayFrameRef.current
-                && restsRef.current.includes(displayFrameRef.current) ? displayFrameRef.current : null;
-            restingSince = restFrame === null ? null : restingSince ?? now;
-            const idle = restingSince !== null && now - restingSince > IDLE_DELAY_MS ? restFrame : null;
-            if (idle !== idleFrameRef.current) {
-                if (idle === null) holdUntil = now + IDLE_FADE_OUT_MS;
-                idleFrameRef.current = idle;
-                setIdleFrame(idle);
-            }
-
-            if (!isIntroPlayingRef.current && now >= holdUntil) {
+            if (!isIntroPlayingRef.current) {
                 const target = targetFrameRef.current;
                 const diff = target - displayFrameRef.current;
                 const dist = Math.abs(diff);
@@ -424,16 +395,6 @@ export default function ScrollyExperience({ profile }) {
     const handleStartSummon = () => {
         if (isLoading || isSummoned) return;
         window.scrollTo({ top: 0, behavior: 'instant' });
-        // Only now, once the visitor is in: the landing's idle clip downloads first, so it's ready as the
-        // descent lands. The rest of the sequence isn't needed during the intro, so its queue pauses meanwhile.
-        if (idleClips) {
-            restHoldRef.current = Promise.race([
-                preloadIdleClip(FRAME_INTRO_END, 'high'),
-                new Promise((resolve) => setTimeout(resolve, LANDING_CLIP_HEADSTART_MS)),
-            ]).then(() => {
-                restHoldRef.current = null;
-            });
-        }
         startRestLoading();
         setIsLoading(true);
     };
@@ -456,8 +417,10 @@ export default function ScrollyExperience({ profile }) {
                 isSummoned ? 'h-[600vh]' : 'h-screen overflow-hidden'
             }`}
         >
-            {/* Sticky fullscreen viewport (canvas + HUD overlays) */}
+            {/* Sticky fullscreen viewport (live city + pilot canvas + HUD overlays) */}
             <div className="sticky top-0 left-0 w-full h-screen overflow-hidden z-20">
+                {hybrid && <CityBackdrop active={isSummoned} frameRef={displayFrameRef} />}
+
                 <canvas
                     ref={canvasRef}
                     aria-hidden="true"
@@ -465,9 +428,6 @@ export default function ScrollyExperience({ profile }) {
                         isSummoned ? 'opacity-100' : 'opacity-0 pointer-events-none'
                     }`}
                 />
-
-                {/* Looping clip of the resting scene keeps the city moving between scrolls */}
-                <IdleLoop frame={idleFrame} rests={rests} />
 
                 {/* Scene 0: Summon button / loading */}
                 <AnimatePresence>

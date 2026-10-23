@@ -46,6 +46,6 @@ _ide_helper_models.php
 Homestead.json
 Homestead.yaml
 
-# Idle-loop sources: rest frames exported from public/frames, raw AI clips
-/idle-loops/*.png
-/idle-loops/*.mp4
+
+# Raw idle-loop clips from the earlier approach (kept locally only)
+/idle-loops/

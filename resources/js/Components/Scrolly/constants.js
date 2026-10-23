@@ -41,8 +41,17 @@ export function restFrames(projectCount) {
     return [FRAME_INTRO_END, FRAME_STANDING_CENTER, ...shards];
 }
 
-/** Looping clip of the scene resting on `frame` (public/idle/rest_NNN.mp4, see idle-loops/README.md). */
-export const idleLoopUrl = (frame) => `/idle/rest_${String(frame).padStart(3, '0')}.mp4`;
+/**
+ * Virtual camera for the live city behind the pilot, keyed to the frame so it follows the footage:
+ * `rise` drops from high above the skyline to roof level over the descent, `pan` drifts slowly sideways.
+ */
+export function cityCamera(frame) {
+    const descent = clamp((frame - 1) / (FRAME_INTRO_END - 6), 0, 1);
+    return {
+        rise: 1 - descent * descent * (3 - 2 * descent),
+        pan: ((frame - FRAME_STANDING_CENTER) / TOTAL_FRAMES) * 0.6,
+    };
+}
 
 // ---- Image <-> viewport mapping (canvas draws the frame with object-fit: cover) ----
 export const IMAGE_SIZE = { w: 1280, h: 720 };
