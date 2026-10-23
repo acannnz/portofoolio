@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, useReducedMotion } from 'framer-motion';
 import useTypewriter from '../hooks/useTypewriter';
 import IdentityPhase from './Scrolly/IdentityPhase';
-import IdleLoop from './Scrolly/IdleLoop';
+import IdleLoop, { IDLE_FADE_OUT_MS } from './Scrolly/IdleLoop';
 import ProjectsPhase from './Scrolly/ProjectsPhase';
 import SkillsPhase from './Scrolly/SkillsPhase';
 import SummonScreen from './Scrolly/SummonScreen';
@@ -194,6 +194,8 @@ export default function ScrollyExperience({ profile }) {
         let direction = 1;
         let velocity = 0; // frames per second
         let restingSince = null;
+        // The scene holds still until this time while the idle loop dissolves back into the still frame
+        let holdUntil = 0;
         let lastTime = performance.now();
 
         // Keeps decoded bitmaps in a window around the playhead, biased towards the direction of travel
@@ -239,7 +241,20 @@ export default function ScrollyExperience({ profile }) {
             const dt = Math.min(now - lastTime, 100);
             lastTime = now;
 
-            if (!isIntroPlayingRef.current) {
+            // Resting on a rest frame for a moment hands the scene over to that frame's idle loop. Leaving it
+            // first dissolves the clip back into the still rest frame, so it never blends into a moving scene.
+            const restFrame = !isIntroPlayingRef.current && !reduceMotionRef.current && velocity === 0
+                && targetFrameRef.current === displayFrameRef.current
+                && restsRef.current.includes(displayFrameRef.current) ? displayFrameRef.current : null;
+            restingSince = restFrame === null ? null : restingSince ?? now;
+            const idle = restingSince !== null && now - restingSince > IDLE_DELAY_MS ? restFrame : null;
+            if (idle !== idleFrameRef.current) {
+                if (idle === null) holdUntil = now + IDLE_FADE_OUT_MS;
+                idleFrameRef.current = idle;
+                setIdleFrame(idle);
+            }
+
+            if (!isIntroPlayingRef.current && now >= holdUntil) {
                 const target = targetFrameRef.current;
                 const diff = target - displayFrameRef.current;
                 const dist = Math.abs(diff);
@@ -268,16 +283,6 @@ export default function ScrollyExperience({ profile }) {
                         alignScrollTo(target);
                     }
                 }
-            }
-
-            // Resting on a rest frame for a moment hands the scene over to that frame's idle loop
-            const restFrame = !isIntroPlayingRef.current && !reduceMotionRef.current && velocity === 0
-                && restsRef.current.includes(displayFrameRef.current) ? displayFrameRef.current : null;
-            restingSince = restFrame === null ? null : restingSince ?? now;
-            const idle = restingSince !== null && now - restingSince > IDLE_DELAY_MS ? restFrame : null;
-            if (idle !== idleFrameRef.current) {
-                idleFrameRef.current = idle;
-                setIdleFrame(idle);
             }
 
             const pos = clamp(displayFrameRef.current, 1, TOTAL_FRAMES);
@@ -436,7 +441,7 @@ export default function ScrollyExperience({ profile }) {
                 />
 
                 {/* Looping clip of the resting scene keeps the city moving between scrolls */}
-                <IdleLoop frame={idleFrame} />
+                <IdleLoop frame={idleFrame} rests={rests} />
 
                 {/* Scene 0: Summon button / loading */}
                 <AnimatePresence>
