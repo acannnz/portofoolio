@@ -45,3 +45,6 @@ _ide_helper_models.php
 .php_cs.cache
 Homestead.json
 Homestead.yaml
+
+# Idle-loop source frames (exported from public/frames)
+/idle-loops/*.png
